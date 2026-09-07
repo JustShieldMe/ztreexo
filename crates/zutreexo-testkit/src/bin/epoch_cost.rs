@@ -1,6 +1,6 @@
 //! What does an epoch policy actually cost, on both sides?
 //!
-//! `zutreexo-bridge`'s [`EpochPolicy`] has two knobs and neither has an
+//! `zutreexo-bridge`'s `EpochPolicy` has two knobs and neither has an
 //! obviously right value. They pull in opposite directions:
 //!
 //! * **`interval`** — blocks between snapshots. A wallet resolving against the
