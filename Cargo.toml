@@ -75,18 +75,33 @@ overflow-checks = true
 debug = true
 overflow-checks = true
 
-# `rustreexo` 0.6.0 as published generates *invalid inclusion proofs* for any
-# leaf whose sibling has been deleted, which breaks the transparent half of this
-# project outright — a bridge node cannot serve proofs across blocks
-# (`docs/design.md` D10). This pins a fork of v0.6.0 carrying the one-line fix
-# from upstream PR mit-dci/rustreexo#152, verified here against a control:
-# 1,848 of 4,671 proofs fail on stock, 0 on the fork (D25).
+# This pin now carries **three** upstream fixes, not one. Two of them are ours.
+#
+# **D10 — invalid proofs after deletion.** `rustreexo` 0.6.0 as published
+# generates invalid inclusion proofs for any leaf whose sibling has been
+# deleted, which breaks the transparent half of this project outright: a bridge
+# node cannot serve proofs across blocks. The fork carries the one-line fix from
+# upstream PR mit-dci/rustreexo#152, verified against a control — 1,848 of 4,671
+# proofs fail on stock, 0 on the fork (D25).
+#
+# **D33 — `MemForest::deserialize` is not total on malformed input.** Two
+# separate defects, both reachable from a snapshot file a peer supplied:
+# an unrecognised node-type byte panics, and deeply nested input recurses until
+# the stack overflows. The second is the worse one and was found while fixing
+# the first: a stack overflow **aborts rather than unwinds**, so the
+# `catch_unwind` in `UtxoForest::from_bytes` never contained it.
+#
+# Moving the pin from `dc368cc` to `8931ab8` is what lets `forest_decode` and
+# `snapshot_decode` be fuzzed at all — both died within seconds before, and
+# `scripts/fuzz_72h.sh` excluded them for that reason.
 #
 # A `[patch]` rather than a git dependency on the crate itself, so the version
 # requirement above stays visible and **removing these three lines restores the
 # published crate** the moment upstream merges. When that happens, delete this
 # block, drop the `allow-git` entry in `deny.toml`, and expect
-# `tests/upstream_rustreexo.rs` to keep passing — it asserts the fixed
-# behaviour, so it is the guard on this pin.
+# `tests/upstream_rustreexo.rs` to keep passing — it asserts the fixed D10
+# behaviour, so it is the guard on this pin. The D33 fixes are guarded by
+# `fuzz/artifacts/{forest,snapshot}_decode/crash-*`, replayed as regression
+# seeds.
 [patch.crates-io]
-rustreexo = { git = "https://github.com/USCMig/rustreexo", rev = "dc368ccc6988f85c0754ef0b1dff9258f2789123" }
+rustreexo = { git = "https://github.com/USCMig/rustreexo", rev = "8931ab8b6a01c75bfb784d128b9c20df83217aee" }

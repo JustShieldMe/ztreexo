@@ -7,13 +7,21 @@ edition = "2021"
 [package.metadata]
 cargo-fuzz = true
 
-# The same fork pin the workspace uses (docs/design.md D25). Without it this
-# crate silently resolves `rustreexo` from crates.io and fuzzes 0.6.0 — code we
-# do not ship. The first run of these targets did exactly that, and the crash
-# it reported named `rustreexo-0.6.0` in the registry path, which is the only
-# reason it was noticed.
+# The same fork pin the workspace uses (docs/design.md D25, D33). Without it
+# this crate silently resolves `rustreexo` from crates.io and fuzzes 0.6.0 —
+# code we do not ship. The first run of these targets did exactly that, and the
+# crash it reported named `rustreexo-0.6.0` in the registry path, which is the
+# only reason it was noticed.
+#
+# **This rev must equal the one in the workspace `Cargo.toml`.** It is a second
+# copy because `cargo fuzz` builds outside the workspace (see below), and a
+# second copy is a second thing to forget: bumping only the workspace pin to the
+# D33 fix left this at `dc368cc`, so all five crash artifacts still reproduced
+# against a `MemForest::deserialize` that had already been fixed — the replay
+# looked like the fix had failed. `tests/pins_agree.rs` in `zutreexo-testkit`
+# now fails if the two ever diverge again.
 [patch.crates-io]
-rustreexo = { git = "https://github.com/USCMig/rustreexo", rev = "dc368ccc6988f85c0754ef0b1dff9258f2789123" }
+rustreexo = { git = "https://github.com/USCMig/rustreexo", rev = "8931ab8b6a01c75bfb784d128b9c20df83217aee" }
 
 # Deliberately outside the workspace. `cargo fuzz` builds with
 # `-Zsanitizer=address` on nightly and its own profile; pulling it into the

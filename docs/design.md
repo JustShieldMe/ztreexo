@@ -1037,8 +1037,8 @@ and narrower than the claim written next to it.
 
 ### The fix, written and verified
 
-Two commits on `d33-deserialize-no-panic` in the fork clone, **not yet pushed**
-— that is the user's to do:
+Two commits on `d33-deserialize-no-panic` in the fork clone. **Pushed
+2026-09-07 and pinned in both manifests 2026-09-08:**
 
 1. The node-type tag returns `io::Error::new(InvalidData, ...)` instead of
    panicking, matching what `node_hash/mod.rs:316` already does for an unknown
@@ -1062,9 +1062,40 @@ The full workspace suite passes against the patched fork, `upstream_rustreexo.rs
 included. Each fork-side regression test was confirmed to fail with only its own
 fix reverted.
 
-**The `catch_unwind` stays** until the pin moves to the pushed revision. It
-costs the fuzzer signal (above), but removing it before the pin moves would
-reopen the panic it was written for.
+**The `catch_unwind` stays** for now. It costs the fuzzer signal (above), but
+it is cheap and it is the only thing standing between a future unpinning and
+the panic it was written for. Removing it is a separate decision from moving
+the pin, and neither the pin nor the fuzz run needs it gone.
+
+### Closed out 2026-09-08 — both targets fuzz, and the pin lived in two places
+
+The pin moved to `8931ab8b6a01c75bfb784d128b9c20df83217aee`, which carries D10
+plus both D33 fixes. `forest_decode` and `snapshot_decode` are back in
+`scripts/fuzz_72h.sh`, so Phase 6's fuzzing half now covers **7 of 7 targets**
+rather than 5.
+
+| target | corpus before | after a smoke run | crashes |
+|---|---|---|---|
+| `forest_decode` | 8 | **514** (10M runs, 209 s) | none |
+| `snapshot_decode` | 100 | **361** (300k runs, 120 s) | none |
+
+Those corpus sizes are the real measure of how thoroughly the exclusion had
+blinded the campaign: eight inputs for `forest_decode` after four phases,
+against `bundle_decode`'s 881. Note also the throughput gap — 48k exec/s versus
+2.5k — which is the number to budget the next campaign from, not the clock.
+
+**A defect the fix itself walked into.** `fuzz/` is deliberately outside the
+workspace, so it carries its **own** `[patch.crates-io]` block. Bumping only
+the workspace pin left the fuzz crate on `dc368cc`, and all five crash
+artifacts still reproduced — against a bug that had already been fixed. The
+replay read as *"the fix does not work"*. The only give-away was the path in
+the panic message naming `dc368cc`.
+
+That is a nasty failure mode, because the evidence points at the wrong thing:
+it looks like a falsified fix rather than a stale pin.
+`crates/zutreexo-testkit/tests/pins_agree.rs` now fails if the two revs ever
+diverge, and separately if either is abbreviated rather than a full 40-character
+hash. Confirmed to fire by reverting one pin.
 
 ---
 

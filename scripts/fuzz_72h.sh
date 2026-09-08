@@ -25,16 +25,18 @@
 #
 # # Which targets, and why not all seven
 #
-# `forest_decode` and `snapshot_decode` are excluded. Both reach
-# `MemForest::deserialize`, which panics on a malformed node-type field and
-# overflows the stack on deeply nested input (`docs/design.md` D33).
-# `UtxoForest::from_bytes` contains the panic with `catch_unwind` — but not the
-# overflow, which aborts rather than unwinds — and libfuzzer-sys installs a
-# panic hook that aborts before unwinding anyway, so under the fuzzer both
-# targets die within seconds.
+# All seven, as of 2026-09-08. `forest_decode` and `snapshot_decode` were
+# excluded for four phases: both reach `MemForest::deserialize`, which panicked
+# on a malformed node-type field and overflowed the stack on deeply nested
+# input (`docs/design.md` D33). `UtxoForest::from_bytes` contained the panic
+# with `catch_unwind` — but not the overflow, which aborts rather than unwinds —
+# and libfuzzer-sys installs a panic hook that aborts before unwinding anyway,
+# so under the fuzzer both died within seconds.
 #
-# The fork fix for both bugs is written and verified (D33). These two go back in
-# once it is pushed and the pin in `Cargo.toml` moves to it.
+# The fork fix is now pushed and pinned in **both** manifests, and all five
+# committed crash artifacts replay clean. Their corpora start small — 8 and 100
+# inputs against `bundle_decode`'s 881 — because they have never had a real run,
+# so treat their first campaign as exploration rather than confirmation.
 #
 # Usage: nohup scripts/fuzz_72h.sh > fuzz-runs/driver.log 2>&1 &
 
@@ -71,6 +73,11 @@ TARGETS=(
   "compact_state_decode:$SHORT_SECS:1"
   "wire_request_decode:$SHORT_SECS:1"
   "nonmembership_decode:$SHORT_SECS:1"
+  # Never fuzzed before D33 was fixed, so their corpora are thin and the first
+  # hours are corpus-building rather than crash-hunting. Same budget as the
+  # other short targets; revisit once there is a saturation curve to read.
+  "forest_decode:$SHORT_SECS:1"
+  "snapshot_decode:$SHORT_SECS:1"
 )
 
 mkdir -p "$OUT"
