@@ -98,11 +98,15 @@ jobs:
       # regression and would have justified gutting the floors. Anyone running
       # this job by hand should run the clean step too.
       - name: Discard stale coverage profiles
-        run: cargo llvm-cov clean --workspace
+        run: cargo +nightly-2026-09-06 llvm-cov clean --workspace
 
+      # The toolchain is named here, not merely installed above. Relying on
+      # `rustup default` left CI measuring on nightly-2026-08-15 while the
+      # floors had been re-baselined on 09-06, which tripped exactly the six
+      # entries whose margin was under the gap between the two.
       - name: Measure
         run: >
-          cargo llvm-cov --workspace --locked --branch
+          cargo +nightly-2026-09-06 llvm-cov --workspace --locked --branch
           --json --output-path coverage.json
 
       - name: Enforce floors
