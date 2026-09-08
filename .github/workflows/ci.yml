@@ -70,8 +70,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: dtolnay/rust-toolchain@nightly
+      # Pinned, not floating. `@nightly` installs whatever is current that
+      # day, and nightlies emit different llvm region counts for identical
+      # code -- on 2026-09-06 that moved 27 floors red with zero change in
+      # branch coverage. Bumping this pin means re-measuring every floor in
+      # scripts/check_coverage.py in the same commit.
+      - uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: nightly-2026-09-06
           components: llvm-tools-preview
 
       - uses: Swatinem/rust-cache@v2
@@ -92,11 +98,15 @@ jobs:
       # regression and would have justified gutting the floors. Anyone running
       # this job by hand should run the clean step too.
       - name: Discard stale coverage profiles
-        run: cargo llvm-cov clean --workspace
+        run: cargo +nightly-2026-09-06 llvm-cov clean --workspace
 
+      # The toolchain is named here, not merely installed above. Relying on
+      # `rustup default` left CI measuring on nightly-2026-08-15 while the
+      # floors had been re-baselined on 09-06, which tripped exactly the six
+      # entries whose margin was under the gap between the two.
       - name: Measure
         run: >
-          cargo llvm-cov --workspace --locked --branch
+          cargo +nightly-2026-09-06 llvm-cov --workspace --locked --branch
           --json --output-path coverage.json
 
       - name: Enforce floors
