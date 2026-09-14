@@ -1,0 +1,313 @@
+warning: binary `bundle_decode` should have a kebab-case name
+   |
+ 1 | /home/blocknodes/ztreexo/fuzz/target/.../bundle_decode
+   |                                          ^^^^^^^^^^^^^
+   |
+   = note: `cargo::non_kebab_case_bins` is set to `warn` by default
+help: to change the binary name to `bundle-decode`, convert `bin.name`
+  --> Cargo.toml:44:8
+   |
+44 - name = "bundle_decode"
+44 + name = "bundle-decode"
+   |
+warning: binary `compact_state_decode` should have a kebab-case name
+   |
+ 1 | /home/blocknodes/ztreexo/fuzz/target/.../compact_state_decode
+   |                                          ^^^^^^^^^^^^^^^^^^^^
+   |
+help: to change the binary name to `compact-state-decode`, convert `bin.name`
+  --> Cargo.toml:65:8
+   |
+65 - name = "compact_state_decode"
+65 + name = "compact-state-decode"
+   |
+warning: binary `forest_decode` should have a kebab-case name
+   |
+ 1 | /home/blocknodes/ztreexo/fuzz/target/.../forest_decode
+   |                                          ^^^^^^^^^^^^^
+   |
+help: to change the binary name to `forest-decode`, convert `bin.name`
+  --> Cargo.toml:86:8
+   |
+86 - name = "forest_decode"
+86 + name = "forest-decode"
+   |
+warning: binary `nonmembership_decode` should have a kebab-case name
+   |
+ 1 | /home/blocknodes/ztreexo/fuzz/target/.../nonmembership_decode
+   |                                          ^^^^^^^^^^^^^^^^^^^^
+   |
+help: to change the binary name to `nonmembership-decode`, convert `bin.name`
+  --> Cargo.toml:79:8
+   |
+79 - name = "nonmembership_decode"
+79 + name = "nonmembership-decode"
+   |
+warning: binary `snapshot_decode` should have a kebab-case name
+   |
+ 1 | /home/blocknodes/ztreexo/fuzz/target/.../snapshot_decode
+   |                                          ^^^^^^^^^^^^^^^
+   |
+help: to change the binary name to `snapshot-decode`, convert `bin.name`
+  --> Cargo.toml:58:8
+   |
+58 - name = "snapshot_decode"
+58 + name = "snapshot-decode"
+   |
+warning: binary `utxo_proof_decode` should have a kebab-case name
+   |
+ 1 | /home/blocknodes/ztreexo/fuzz/target/.../utxo_proof_decode
+   |                                          ^^^^^^^^^^^^^^^^^
+   |
+help: to change the binary name to `utxo-proof-decode`, convert `bin.name`
+  --> Cargo.toml:51:8
+   |
+51 - name = "utxo_proof_decode"
+51 + name = "utxo-proof-decode"
+   |
+warning: binary `wire_request_decode` should have a kebab-case name
+   |
+ 1 | /home/blocknodes/ztreexo/fuzz/target/.../wire_request_decode
+   |                                          ^^^^^^^^^^^^^^^^^^^
+   |
+help: to change the binary name to `wire-request-decode`, convert `bin.name`
+  --> Cargo.toml:72:8
+   |
+72 - name = "wire_request_decode"
+72 + name = "wire-request-decode"
+   |
+warning: `zutreexo-fuzz` (manifest) generated 7 warnings
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Finished `release` profile [optimized + debuginfo] target(s) in 0.35s
+warning: the following packages contain code that will be rejected by a future version of Rust: halo2_gadgets v0.5.0, primitive-types v0.12.2
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+warning: binary `bundle_decode` should have a kebab-case name
+   |
+ 1 | /home/blocknodes/ztreexo/fuzz/target/.../bundle_decode
+   |                                          ^^^^^^^^^^^^^
+   |
+   = note: `cargo::non_kebab_case_bins` is set to `warn` by default
+help: to change the binary name to `bundle-decode`, convert `bin.name`
+  --> Cargo.toml:44:8
+   |
+44 - name = "bundle_decode"
+44 + name = "bundle-decode"
+   |
+warning: binary `compact_state_decode` should have a kebab-case name
+   |
+ 1 | /home/blocknodes/ztreexo/fuzz/target/.../compact_state_decode
+   |                                          ^^^^^^^^^^^^^^^^^^^^
+   |
+help: to change the binary name to `compact-state-decode`, convert `bin.name`
+  --> Cargo.toml:65:8
+   |
+65 - name = "compact_state_decode"
+65 + name = "compact-state-decode"
+   |
+warning: binary `forest_decode` should have a kebab-case name
+   |
+ 1 | /home/blocknodes/ztreexo/fuzz/target/.../forest_decode
+   |                                          ^^^^^^^^^^^^^
+   |
+help: to change the binary name to `forest-decode`, convert `bin.name`
+  --> Cargo.toml:86:8
+   |
+86 - name = "forest_decode"
+86 + name = "forest-decode"
+   |
+warning: binary `nonmembership_decode` should have a kebab-case name
+   |
+ 1 | /home/blocknodes/ztreexo/fuzz/target/.../nonmembership_decode
+   |                                          ^^^^^^^^^^^^^^^^^^^^
+   |
+help: to change the binary name to `nonmembership-decode`, convert `bin.name`
+  --> Cargo.toml:79:8
+   |
+79 - name = "nonmembership_decode"
+79 + name = "nonmembership-decode"
+   |
+warning: binary `snapshot_decode` should have a kebab-case name
+   |
+ 1 | /home/blocknodes/ztreexo/fuzz/target/.../snapshot_decode
+   |                                          ^^^^^^^^^^^^^^^
+   |
+help: to change the binary name to `snapshot-decode`, convert `bin.name`
+  --> Cargo.toml:58:8
+   |
+58 - name = "snapshot_decode"
+58 + name = "snapshot-decode"
+   |
+warning: binary `utxo_proof_decode` should have a kebab-case name
+   |
+ 1 | /home/blocknodes/ztreexo/fuzz/target/.../utxo_proof_decode
+   |                                          ^^^^^^^^^^^^^^^^^
+   |
+help: to change the binary name to `utxo-proof-decode`, convert `bin.name`
+  --> Cargo.toml:51:8
+   |
+51 - name = "utxo_proof_decode"
+51 + name = "utxo-proof-decode"
+   |
+warning: binary `wire_request_decode` should have a kebab-case name
+   |
+ 1 | /home/blocknodes/ztreexo/fuzz/target/.../wire_request_decode
+   |                                          ^^^^^^^^^^^^^^^^^^^
+   |
+help: to change the binary name to `wire-request-decode`, convert `bin.name`
+  --> Cargo.toml:72:8
+   |
+72 - name = "wire_request_decode"
+72 + name = "wire-request-decode"
+   |
+warning: `zutreexo-fuzz` (manifest) generated 7 warnings
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Finished `release` profile [optimized + debuginfo] target(s) in 0.26s
+    Blocking waiting for file lock on package cache
+warning: the following packages contain code that will be rejected by a future version of Rust: halo2_gadgets v0.5.0, primitive-types v0.12.2
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running `fuzz/target/x86_64-unknown-linux-gnu/release/wire_request_decode -artifact_prefix=/home/blocknodes/ztreexo/fuzz/artifacts/wire_request_decode/ -max_total_time=86400 -rss_limit_mb=4096 -print_final_stats=1 /home/blocknodes/ztreexo/fuzz/corpus/wire_request_decode`
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 1857023478
+INFO: Loaded 1 modules   (952 inline 8-bit counters): 952 [0x5779ae681410, 0x5779ae6817c8), 
+INFO: Loaded 1 PC tables (952 PCs): 952 [0x5779ae6817c8,0x5779ae685348), 
+INFO:       18 files found in /home/blocknodes/ztreexo/fuzz/corpus/wire_request_decode
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: seed corpus: files: 18 min: 1b max: 204b total: 365b rss: 58Mb
+#19	INITED cov: 39 ft: 44 corp: 3/213b exec/s: 0 rss: 58Mb
+#28	NEW    cov: 42 ft: 48 corp: 4/215b lim: 204 exec/s: 0 rss: 58Mb L: 2/204 MS: 4 CopyPart-ChangeByte-ChangeBit-ChangeBinInt-
+#74	REDUCE cov: 42 ft: 48 corp: 4/122b lim: 204 exec/s: 0 rss: 58Mb L: 111/111 MS: 1 EraseBytes-
+#85	NEW    cov: 48 ft: 55 corp: 5/124b lim: 204 exec/s: 0 rss: 58Mb L: 2/111 MS: 1 CopyPart-
+#134	REDUCE cov: 48 ft: 55 corp: 5/113b lim: 204 exec/s: 0 rss: 58Mb L: 100/100 MS: 4 InsertByte-ChangeBit-ChangeBinInt-EraseBytes-
+#142	REDUCE cov: 48 ft: 55 corp: 5/61b lim: 204 exec/s: 0 rss: 58Mb L: 48/48 MS: 3 ChangeBit-ChangeByte-CrossOver-
+	NEW_FUNC[1/2]: 0x5779ae5dbeb0  (/home/blocknodes/ztreexo/fuzz/target/x86_64-unknown-linux-gnu/release/wire_request_decode+0x12ceb0) (BuildId: 61f6e65ee939429ea4ef81d6c1c9c5bb55c889cd)
+	NEW_FUNC[2/2]: 0x5779ae5e02f0  (/home/blocknodes/ztreexo/fuzz/target/x86_64-unknown-linux-gnu/release/wire_request_decode+0x1312f0) (BuildId: 61f6e65ee939429ea4ef81d6c1c9c5bb55c889cd)
+#148	NEW    cov: 61 ft: 71 corp: 6/64b lim: 204 exec/s: 0 rss: 58Mb L: 3/48 MS: 1 CrossOver-
+#149	REDUCE cov: 61 ft: 71 corp: 6/41b lim: 204 exec/s: 0 rss: 58Mb L: 25/25 MS: 1 EraseBytes-
+#155	NEW    cov: 63 ft: 74 corp: 7/135b lim: 204 exec/s: 0 rss: 58Mb L: 94/94 MS: 1 InsertRepeatedBytes-
+#163	NEW    cov: 66 ft: 77 corp: 8/136b lim: 204 exec/s: 0 rss: 58Mb L: 1/94 MS: 3 ChangeBit-EraseBytes-EraseBytes-
+#234	NEW    cov: 69 ft: 80 corp: 9/139b lim: 204 exec/s: 0 rss: 58Mb L: 3/94 MS: 1 ChangeBit-
+#361	NEW    cov: 75 ft: 86 corp: 10/141b lim: 204 exec/s: 0 rss: 58Mb L: 2/94 MS: 2 ShuffleBytes-ChangeBit-
+#445	REDUCE cov: 75 ft: 86 corp: 10/135b lim: 204 exec/s: 0 rss: 58Mb L: 19/94 MS: 4 ChangeByte-CrossOver-ChangeBinInt-EraseBytes-
+#529	REDUCE cov: 75 ft: 86 corp: 10/120b lim: 204 exec/s: 0 rss: 58Mb L: 79/79 MS: 4 ChangeBit-ShuffleBytes-ChangeBit-EraseBytes-
+#622	REDUCE cov: 75 ft: 86 corp: 10/118b lim: 204 exec/s: 0 rss: 58Mb L: 17/79 MS: 3 ShuffleBytes-ChangeByte-EraseBytes-
+#623	REDUCE cov: 75 ft: 86 corp: 10/112b lim: 204 exec/s: 0 rss: 58Mb L: 11/79 MS: 1 EraseBytes-
+#639	REDUCE cov: 77 ft: 88 corp: 11/119b lim: 204 exec/s: 0 rss: 58Mb L: 7/79 MS: 1 EraseBytes-
+	NEW_FUNC[1/1]: 0x5779ae5de950  (/home/blocknodes/ztreexo/fuzz/target/x86_64-unknown-linux-gnu/release/wire_request_decode+0x12f950) (BuildId: 61f6e65ee939429ea4ef81d6c1c9c5bb55c889cd)
+#759	NEW    cov: 92 ft: 110 corp: 12/121b lim: 204 exec/s: 0 rss: 58Mb L: 2/79 MS: 5 CrossOver-ShuffleBytes-CopyPart-ChangeBit-ShuffleBytes-
+#823	NEW    cov: 92 ft: 111 corp: 13/124b lim: 204 exec/s: 0 rss: 58Mb L: 3/79 MS: 4 CopyPart-ChangeBit-ChangeBinInt-ShuffleBytes-
+#855	REDUCE cov: 99 ft: 122 corp: 14/130b lim: 204 exec/s: 0 rss: 58Mb L: 6/79 MS: 2 ChangeBinInt-EraseBytes-
+#889	REDUCE cov: 99 ft: 122 corp: 14/128b lim: 204 exec/s: 0 rss: 58Mb L: 9/79 MS: 4 CrossOver-CMP-ChangeBinInt-EraseBytes- DE: "\001\000"-
+#1345	REDUCE cov: 99 ft: 122 corp: 14/124b lim: 204 exec/s: 0 rss: 58Mb L: 75/75 MS: 1 EraseBytes-
+#1367	NEW    cov: 100 ft: 123 corp: 15/129b lim: 204 exec/s: 0 rss: 58Mb L: 5/75 MS: 2 CrossOver-ChangeBinInt-
+#1744	REDUCE cov: 100 ft: 123 corp: 15/95b lim: 204 exec/s: 0 rss: 58Mb L: 41/41 MS: 2 ChangeByte-EraseBytes-
+#2012	REDUCE cov: 100 ft: 123 corp: 15/91b lim: 204 exec/s: 0 rss: 58Mb L: 37/37 MS: 3 CrossOver-CopyPart-EraseBytes-
+#2703	NEW    cov: 102 ft: 126 corp: 16/93b lim: 204 exec/s: 0 rss: 58Mb L: 2/37 MS: 1 ChangeBit-
+#2990	REDUCE cov: 102 ft: 126 corp: 16/92b lim: 204 exec/s: 0 rss: 58Mb L: 4/37 MS: 2 ChangeByte-EraseBytes-
+#4286	REDUCE cov: 102 ft: 126 corp: 16/91b lim: 211 exec/s: 0 rss: 58Mb L: 6/37 MS: 1 EraseBytes-
+#6398	REDUCE cov: 102 ft: 126 corp: 16/90b lim: 225 exec/s: 0 rss: 58Mb L: 3/37 MS: 2 CMP-EraseBytes- DE: "\377\377"-
+#6978	NEW    cov: 105 ft: 129 corp: 17/95b lim: 225 exec/s: 0 rss: 58Mb L: 5/37 MS: 5 ShuffleBytes-InsertByte-ShuffleBytes-PersAutoDict-ChangeBit- DE: "\001\000"-
+#7144	NEW    cov: 107 ft: 132 corp: 18/103b lim: 225 exec/s: 0 rss: 58Mb L: 8/37 MS: 1 CrossOver-
+#7215	REDUCE cov: 107 ft: 132 corp: 18/101b lim: 225 exec/s: 0 rss: 58Mb L: 3/37 MS: 1 EraseBytes-
+#7277	NEW    cov: 110 ft: 135 corp: 19/108b lim: 225 exec/s: 0 rss: 58Mb L: 7/37 MS: 2 CrossOver-InsertByte-
+#7392	NEW    cov: 113 ft: 138 corp: 20/116b lim: 225 exec/s: 0 rss: 58Mb L: 8/37 MS: 5 ChangeBit-ShuffleBytes-CMP-EraseBytes-ChangeBinInt- DE: "\001\000"-
+	NEW_FUNC[1/2]: 0x5779ae5de190  (/home/blocknodes/ztreexo/fuzz/target/x86_64-unknown-linux-gnu/release/wire_request_decode+0x12f190) (BuildId: 61f6e65ee939429ea4ef81d6c1c9c5bb55c889cd)
+	NEW_FUNC[2/2]: 0x5779ae5e0ad0  (/home/blocknodes/ztreexo/fuzz/target/x86_64-unknown-linux-gnu/release/wire_request_decode+0x131ad0) (BuildId: 61f6e65ee939429ea4ef81d6c1c9c5bb55c889cd)
+#7858	NEW    cov: 131 ft: 157 corp: 21/227b lim: 225 exec/s: 0 rss: 58Mb L: 111/111 MS: 1 InsertRepeatedBytes-
+#7867	REDUCE cov: 131 ft: 157 corp: 21/222b lim: 225 exec/s: 0 rss: 58Mb L: 106/106 MS: 4 InsertByte-InsertByte-PersAutoDict-EraseBytes- DE: "\001\000"-
+#8013	REDUCE cov: 131 ft: 157 corp: 21/201b lim: 225 exec/s: 0 rss: 58Mb L: 85/85 MS: 1 EraseBytes-
+#8047	REDUCE cov: 131 ft: 157 corp: 21/199b lim: 225 exec/s: 0 rss: 58Mb L: 6/85 MS: 4 ChangeBinInt-ChangeBit-CrossOver-EraseBytes-
+#8131	REDUCE cov: 131 ft: 157 corp: 21/186b lim: 225 exec/s: 0 rss: 58Mb L: 72/72 MS: 4 PersAutoDict-ChangeBit-ChangeBinInt-EraseBytes- DE: "\377\377"-
+#8387	REDUCE cov: 134 ft: 160 corp: 22/188b lim: 225 exec/s: 0 rss: 58Mb L: 2/72 MS: 1 EraseBytes-
+#8478	REDUCE cov: 134 ft: 160 corp: 22/187b lim: 225 exec/s: 0 rss: 58Mb L: 5/72 MS: 1 EraseBytes-
+#8576	REDUCE cov: 134 ft: 160 corp: 22/173b lim: 225 exec/s: 0 rss: 58Mb L: 58/58 MS: 3 ChangeBit-CrossOver-EraseBytes-
+#8812	REDUCE cov: 134 ft: 160 corp: 22/172b lim: 225 exec/s: 0 rss: 58Mb L: 8/58 MS: 1 EraseBytes-
+#8978	NEW    cov: 142 ft: 168 corp: 23/237b lim: 225 exec/s: 0 rss: 58Mb L: 65/65 MS: 1 CrossOver-
+#9080	NEW    cov: 143 ft: 169 corp: 24/409b lim: 225 exec/s: 0 rss: 58Mb L: 172/172 MS: 2 CrossOver-InsertRepeatedBytes-
+#9181	REDUCE cov: 143 ft: 169 corp: 24/404b lim: 225 exec/s: 0 rss: 58Mb L: 167/167 MS: 1 EraseBytes-
+#9186	REDUCE cov: 143 ft: 169 corp: 24/393b lim: 225 exec/s: 0 rss: 58Mb L: 47/167 MS: 5 ChangeByte-CopyPart-ChangeBinInt-ChangeBinInt-EraseBytes-
+#9205	REDUCE cov: 143 ft: 169 corp: 24/376b lim: 225 exec/s: 0 rss: 58Mb L: 150/150 MS: 4 PersAutoDict-ShuffleBytes-CrossOver-EraseBytes- DE: "\377\377"-
+#9616	REDUCE cov: 143 ft: 169 corp: 24/350b lim: 225 exec/s: 0 rss: 58Mb L: 124/124 MS: 1 CrossOver-
+#9728	REDUCE cov: 143 ft: 169 corp: 24/341b lim: 225 exec/s: 0 rss: 58Mb L: 56/124 MS: 2 CrossOver-EraseBytes-
+#9731	REDUCE cov: 143 ft: 169 corp: 24/331b lim: 225 exec/s: 0 rss: 58Mb L: 46/124 MS: 3 PersAutoDict-CopyPart-EraseBytes- DE: "\001\000"-
+	NEW_FUNC[1/2]: 0x5779ae5dc1f0  (/home/blocknodes/ztreexo/fuzz/target/x86_64-unknown-linux-gnu/release/wire_request_decode+0x12d1f0) (BuildId: 61f6e65ee939429ea4ef81d6c1c9c5bb55c889cd)
+	NEW_FUNC[2/2]: 0x5779ae5df930  (/home/blocknodes/ztreexo/fuzz/target/x86_64-unknown-linux-gnu/release/wire_request_decode+0x130930) (BuildId: 61f6e65ee939429ea4ef81d6c1c9c5bb55c889cd)
+#9866	NEW    cov: 162 ft: 198 corp: 25/366b lim: 225 exec/s: 0 rss: 58Mb L: 35/124 MS: 5 InsertRepeatedBytes-EraseBytes-ChangeBinInt-ChangeBinInt-InsertByte-
+#9994	REDUCE cov: 162 ft: 198 corp: 25/365b lim: 225 exec/s: 0 rss: 58Mb L: 36/124 MS: 3 CrossOver-CrossOver-EraseBytes-
+#10020	REDUCE cov: 162 ft: 198 corp: 25/347b lim: 225 exec/s: 0 rss: 58Mb L: 106/106 MS: 1 EraseBytes-
+#10111	REDUCE cov: 162 ft: 198 corp: 25/327b lim: 225 exec/s: 0 rss: 58Mb L: 86/86 MS: 1 EraseBytes-
+#10324	REDUCE cov: 162 ft: 198 corp: 25/295b lim: 225 exec/s: 0 rss: 58Mb L: 54/54 MS: 3 InsertByte-InsertByte-EraseBytes-
+#10520	REDUCE cov: 162 ft: 198 corp: 25/290b lim: 225 exec/s: 0 rss: 58Mb L: 41/54 MS: 1 EraseBytes-
+#10606	REDUCE cov: 162 ft: 198 corp: 25/287b lim: 225 exec/s: 0 rss: 58Mb L: 44/54 MS: 1 EraseBytes-
+#10827	REDUCE cov: 162 ft: 198 corp: 25/285b lim: 225 exec/s: 0 rss: 58Mb L: 3/54 MS: 1 EraseBytes-
+#11153	REDUCE cov: 162 ft: 198 corp: 25/281b lim: 225 exec/s: 0 rss: 58Mb L: 40/54 MS: 1 EraseBytes-
+#11466	REDUCE cov: 162 ft: 198 corp: 25/273b lim: 225 exec/s: 0 rss: 58Mb L: 46/46 MS: 3 EraseBytes-ChangeBit-InsertRepeatedBytes-
+#13017	REDUCE cov: 162 ft: 198 corp: 25/269b lim: 239 exec/s: 0 rss: 58Mb L: 42/42 MS: 1 EraseBytes-
+#14324	NEW    cov: 165 ft: 201 corp: 26/317b lim: 246 exec/s: 0 rss: 58Mb L: 48/48 MS: 2 CrossOver-CMP- DE: "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000"-
+#14686	REDUCE cov: 165 ft: 201 corp: 26/316b lim: 246 exec/s: 0 rss: 58Mb L: 41/48 MS: 2 InsertByte-EraseBytes-
+#15212	NEW    cov: 166 ft: 202 corp: 27/438b lim: 246 exec/s: 0 rss: 58Mb L: 122/122 MS: 1 InsertRepeatedBytes-
+#15260	REDUCE cov: 166 ft: 202 corp: 27/427b lim: 246 exec/s: 0 rss: 58Mb L: 111/111 MS: 3 PersAutoDict-ShuffleBytes-EraseBytes- DE: "\001\000"-
+#15281	REDUCE cov: 166 ft: 202 corp: 27/385b lim: 246 exec/s: 0 rss: 58Mb L: 69/69 MS: 1 EraseBytes-
+#16678	REDUCE cov: 166 ft: 202 corp: 27/384b lim: 253 exec/s: 0 rss: 58Mb L: 40/69 MS: 2 ChangeBit-EraseBytes-
+#16963	REDUCE cov: 166 ft: 202 corp: 27/374b lim: 253 exec/s: 0 rss: 58Mb L: 59/59 MS: 5 ChangeByte-InsertByte-InsertRepeatedBytes-ShuffleBytes-EraseBytes-
+#17388	REDUCE cov: 166 ft: 202 corp: 27/364b lim: 253 exec/s: 0 rss: 58Mb L: 49/49 MS: 5 CopyPart-ShuffleBytes-InsertByte-EraseBytes-EraseBytes-
+#18311	REDUCE cov: 166 ft: 202 corp: 27/363b lim: 260 exec/s: 0 rss: 58Mb L: 40/49 MS: 3 EraseBytes-CMP-InsertByte- DE: "\001\000\000\000"-
+#19253	REDUCE cov: 166 ft: 202 corp: 27/362b lim: 268 exec/s: 0 rss: 58Mb L: 48/48 MS: 2 CopyPart-EraseBytes-
+#19833	REDUCE cov: 166 ft: 202 corp: 27/355b lim: 268 exec/s: 0 rss: 58Mb L: 41/48 MS: 5 CrossOver-EraseBytes-PersAutoDict-InsertByte-CMP- DE: "\001\000\000\000"-"\377\377\377\316"-
+#20479	REDUCE cov: 166 ft: 202 corp: 27/350b lim: 268 exec/s: 0 rss: 58Mb L: 43/43 MS: 1 EraseBytes-
+#21865	NEW    cov: 182 ft: 244 corp: 28/390b lim: 276 exec/s: 0 rss: 58Mb L: 40/43 MS: 1 CMP- DE: "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000"-
+#23884	REDUCE cov: 183 ft: 245 corp: 29/440b lim: 292 exec/s: 0 rss: 58Mb L: 50/50 MS: 4 ChangeByte-CMP-ShuffleBytes-PersAutoDict- DE: "\010\000\000\000\000\000\000\000"-"\377\377"-
+#24166	REDUCE cov: 183 ft: 245 corp: 29/430b lim: 292 exec/s: 0 rss: 58Mb L: 40/43 MS: 2 PersAutoDict-EraseBytes- DE: "\377\377"-
+#36082	REDUCE cov: 183 ft: 245 corp: 29/429b lim: 404 exec/s: 0 rss: 58Mb L: 40/43 MS: 1 EraseBytes-
+#49402	REDUCE cov: 183 ft: 246 corp: 30/469b lim: 534 exec/s: 0 rss: 58Mb L: 40/43 MS: 5 PersAutoDict-CopyPart-ChangeBit-ChangeASCIIInt-CMP- DE: "\001\000\000\000"-"\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000"-
+#56684	REDUCE cov: 185 ft: 248 corp: 31/509b lim: 606 exec/s: 0 rss: 58Mb L: 40/43 MS: 2 CopyPart-ChangeBinInt-
+#58653	NEW    cov: 186 ft: 249 corp: 32/581b lim: 624 exec/s: 0 rss: 58Mb L: 72/72 MS: 4 ShuffleBytes-PersAutoDict-PersAutoDict-ChangeByte- DE: "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000"-"\001\000"-
+#58739	REDUCE cov: 186 ft: 249 corp: 32/568b lim: 624 exec/s: 0 rss: 58Mb L: 59/59 MS: 1 EraseBytes-
+#59825	REDUCE cov: 186 ft: 249 corp: 32/553b lim: 633 exec/s: 0 rss: 58Mb L: 44/44 MS: 1 EraseBytes-
+#60732	REDUCE cov: 186 ft: 249 corp: 32/549b lim: 642 exec/s: 0 rss: 58Mb L: 40/43 MS: 2 InsertByte-EraseBytes-
+#151773	NEW    cov: 186 ft: 250 corp: 33/589b lim: 1539 exec/s: 0 rss: 58Mb L: 40/43 MS: 1 ChangeBinInt-
+#251119	REDUCE cov: 186 ft: 250 corp: 33/587b lim: 2522 exec/s: 0 rss: 66Mb L: 41/41 MS: 1 EraseBytes-
+#425402	NEW    cov: 187 ft: 252 corp: 34/676b lim: 4096 exec/s: 0 rss: 85Mb L: 89/89 MS: 3 InsertRepeatedBytes-ChangeByte-InsertRepeatedBytes-
+#427069	REDUCE cov: 187 ft: 252 corp: 34/668b lim: 4096 exec/s: 0 rss: 85Mb L: 81/81 MS: 2 InsertByte-EraseBytes-
+#427421	REDUCE cov: 187 ft: 252 corp: 34/650b lim: 4096 exec/s: 0 rss: 85Mb L: 63/63 MS: 2 ShuffleBytes-EraseBytes-
+#428184	REDUCE cov: 187 ft: 252 corp: 34/630b lim: 4096 exec/s: 0 rss: 85Mb L: 43/43 MS: 3 ShuffleBytes-ShuffleBytes-EraseBytes-
+#436672	REDUCE cov: 187 ft: 252 corp: 34/628b lim: 4096 exec/s: 0 rss: 86Mb L: 41/41 MS: 3 InsertByte-ChangeBit-EraseBytes-
+#512505	REDUCE cov: 187 ft: 252 corp: 34/627b lim: 4096 exec/s: 512505 rss: 95Mb L: 40/41 MS: 1 EraseBytes-
+#670416	REDUCE cov: 187 ft: 254 corp: 35/667b lim: 4096 exec/s: 670416 rss: 111Mb L: 40/41 MS: 1 ChangeBinInt-
+#1048576	pulse  cov: 187 ft: 254 corp: 35/667b lim: 4096 exec/s: 349525 rss: 149Mb
+#2097152	pulse  cov: 187 ft: 254 corp: 35/667b lim: 4096 exec/s: 349525 rss: 252Mb
+#3824879	NEW    cov: 187 ft: 257 corp: 36/707b lim: 4096 exec/s: 273205 rss: 426Mb L: 40/41 MS: 3 ShuffleBytes-CrossOver-CMP- DE: "\377\377\377\300\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000"-
+#3926175	NEW    cov: 187 ft: 258 corp: 37/747b lim: 4096 exec/s: 280441 rss: 436Mb L: 40/41 MS: 1 ChangeBinInt-
+#4194304	pulse  cov: 187 ft: 258 corp: 37/747b lim: 4096 exec/s: 279620 rss: 464Mb
+#8388608	pulse  cov: 187 ft: 258 corp: 37/747b lim: 4096 exec/s: 254200 rss: 526Mb
+#16777216	pulse  cov: 187 ft: 258 corp: 37/747b lim: 4096 exec/s: 246723 rss: 527Mb
+#33554432	pulse  cov: 187 ft: 258 corp: 37/747b lim: 4096 exec/s: 234646 rss: 528Mb
+#67108864	pulse  cov: 187 ft: 258 corp: 37/747b lim: 4096 exec/s: 225197 rss: 529Mb
+#134217728	pulse  cov: 187 ft: 258 corp: 37/747b lim: 4096 exec/s: 216829 rss: 530Mb
+#268435456	pulse  cov: 187 ft: 258 corp: 37/747b lim: 4096 exec/s: 211866 rss: 531Mb
+#536870912	pulse  cov: 187 ft: 258 corp: 37/747b lim: 4096 exec/s: 208170 rss: 532Mb
+#1073741824	pulse  cov: 187 ft: 258 corp: 37/747b lim: 4096 exec/s: 207006 rss: 533Mb
+#2147483648	pulse  cov: 187 ft: 258 corp: 37/747b lim: 4096 exec/s: 205756 rss: 534Mb
+#4294967296	pulse  cov: 187 ft: 258 corp: 37/747b lim: 4096 exec/s: 205559 rss: 534Mb
+#8589934592	pulse  cov: 187 ft: 258 corp: 37/747b lim: 4096 exec/s: 205162 rss: 534Mb
+#17179869184	pulse  cov: 187 ft: 258 corp: 37/747b lim: 4096 exec/s: 203840 rss: 535Mb
+#17612681635	DONE   cov: 187 ft: 258 corp: 37/747b lim: 4096 exec/s: 203848 rss: 535Mb
+###### Recommended dictionary. ######
+"\001\000" # Uses: 241006943
+"\377\377" # Uses: 240857340
+"\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000" # Uses: 167170177
+"\001\000\000\000" # Uses: 203664999
+"\377\377\377\316" # Uses: 203688197
+"\010\000\000\000\000\000\000\000" # Uses: 184027750
+"\377\377\377\300\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000" # Uses: 167281102
+###### End of recommended dictionary. ######
+Done 17612681635 runs in 86401 second(s)
+stat::number_of_executed_units: 17612681635
+stat::average_exec_per_sec:     203848
+stat::new_units_added:          94
+stat::slowest_unit_time_sec:    0
+stat::peak_rss_mb:              535
