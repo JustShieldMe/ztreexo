@@ -8,3 +8,38 @@
 [2026-09-10T04:06:54+00:00] launching forest_decode for 86400s with 1 worker(s)
 [2026-09-10T04:06:54+00:00] launching snapshot_decode for 86400s with 1 worker(s)
 [2026-09-10T04:06:54+00:00] all launched; waiting
+[2026-09-17T04:06:59+00:00] all targets finished
+[2026-09-17T04:06:59+00:00] bundle_decode: artifacts=0 execs=72125571081
+[2026-09-17T04:06:59+00:00] utxo_proof_decode: artifacts=0 execs=6350868418
+[2026-09-17T04:06:59+00:00] compact_state_decode: artifacts=0 execs=5670811575
+[2026-09-17T04:06:59+00:00] wire_request_decode: artifacts=0 execs=17612681635
+[2026-09-17T04:06:59+00:00] nonmembership_decode: artifacts=0 execs=658841671
+[2026-09-17T04:06:59+00:00] forest_decode: artifacts=2 execs=658707665
+[2026-09-17T04:06:59+00:00] snapshot_decode: artifacts=3 execs=40220946
+[2026-09-17T04:06:59+00:00] saturation analysis
+target                           edges    last new edge   after it
+------------------------------------------------------------------
+wire_request_decode      39->187 (+148)           <1 min    100.0%
+snapshot_decode          1097->1217 (+120)           18.1 h     24.7%
+forest_decode            305->313 (+8)           31 min     97.8%
+bundle_decode            ~823->826 (+3)            2.1 h     98.8%
+compact_state_decode     301->301 (+0)            never    100.0%
+nonmembership_decode     323->323 (+0)            never    100.0%
+utxo_proof_decode        184->184 (+0)            never    100.0%
+------------------------------------------------------------------
+7 targets, 103,117,702,991 executions, 279 new edges
+
+Saturated -- gained no edges. These need seeds or a structured
+generator, not more hours (D36):
+  compact_state_decode: 5,670,811,575 executions, still at 301 edges
+  nonmembership_decode: 658,841,671 executions, still at 323 edges
+  utxo_proof_decode: 6,350,868,418 executions, still at 184 edges
+
+Suggested budget for the next run (10x time-to-last-discovery):
+  wire_request_decode      <1 min
+  snapshot_decode          7.5 d
+  forest_decode            5.2 h
+  bundle_decode            21.0 h
+  compact_state_decode     minutes -- re-seed instead
+  nonmembership_decode     minutes -- re-seed instead
+  utxo_proof_decode        minutes -- re-seed instead
