@@ -44,16 +44,18 @@ Honest framing, because the obvious pitch is the wrong one.
 
 **It does not make wallet sync faster.** Wallet sync is dominated by trial decryption — attempting to decrypt every shielded output with your viewing key, because that is the only way to learn a note is yours. No accumulator changes that. Projects like ZODL's Slipstream, hanh's Warp Sync, and Zingo's pepper-sync attack that cost, and they operate at a layer this project doesn't touch. They are complementary, not competitors.
 
-What it does buy:
+What it does buy, now measured rather than projected ([`docs/benchmarks.md`](docs/benchmarks.md)):
 
-- **`O(log n)` spend-detection instead of a linear scan.** Today a wallet learns its notes were spent by watching every block's revealed nullifiers go by — linear in the gap since last sync. With an IMT, the wallet requests a non-membership proof per nullifier: logarithmic, and independent of chain length. For a wallet resuming after a long absence, that's an asymptotic improvement over anything currently shipping.
-- **Node state decoupled from chain history.** A validating node holds roots plus a proof cache rather than full sets.
+- **`O(log n)` spend-detection instead of a linear scan.** Today a wallet learns its notes were spent by watching every block's revealed nullifiers go by — linear in the gap since last sync. With an IMT it asks for a non-membership proof per note: logarithmic, and independent of chain length. Non-membership verification measures **5.1 µs and flat** from 10⁴ to 10⁶ nullifiers at the production depth of 40. Against a year-long gap that is **317× to 31,705×** fewer bytes depending on how many notes the wallet holds, and proofs win past a gap of about 13 blocks for a one-note wallet.
+- **Node state decoupled from chain history.** A compact node holds **693 bytes** where Zebra holds **31.7 GiB** — about 49,000,000:1 — and it does not grow with the chain.
 
-The costs, which are real and measured rather than assumed:
+And the costs, which are the more interesting half:
 
-- **Proofs add bandwidth.** Bitcoin's Utreexo simulations saw roughly a quarter more download; Zcash's figure will differ and is a Phase 5 measurement.
-- **Asking a server for a specific nullifier's non-membership proof is a metadata leak.** Mitigations — batching, decoys, restricting queries to nullifiers about to be published anyway — are an explicit review gate, not an afterthought.
-- **Zcash's transparent UTXO set is far smaller than Bitcoin's**, so the transparent-side win may not justify its bandwidth. If the numbers say that, the project narrows to the nullifier accumulator and drops the transparent forest.
+- **The headline query cannot be made privately, and something else already does it better.** Asking a bridge about a specific nullifier hands over a value only that note's owner could compute ([D35](docs/design.md)). Phases 6b and 6c built the one mitigation that survived scrutiny — prefix cohorts, where a wallet names a bucket instead of a nullifier — and measured per-note anonymity of 12,302 against **per-wallet anonymity of 1**: every simulated wallet is uniquely fingerprinted by the set of buckets it asks for ([D40](docs/design.md), [D41](docs/design.md)). Meanwhile `spendability-pir` ships the same partition-and-scan with the bucket index hidden by SimplePIR rather than by crowd size, at **1.78×** the bandwidth ([D44](docs/design.md)). For a light client, that is the better answer, and this repo says so.
+- **Proofs add bandwidth.** Measured at **152.6%** overhead for a compact node doing IBD, after sparse encoding cut it from 170.5%.
+- **The transparent forest stays.** Phase 5b reversed the expected narrowing: the transparent side is the cheap half, so dropping it would have kept the expensive one ([`PLAN.md`](PLAN.md)).
+
+What remains genuinely ours is narrow, and stated that way: full history rather than a ~289-day window, a *proof* rather than an answer, and non-membership as a primitive a validator can check.
 
 ## Architecture
 
@@ -127,17 +129,31 @@ The fuzzer earned its place immediately, finding a serialisation bug that had be
 | Phase | Scope | Status |
 |---|---|---|
 | 0 | Spike, baseline measurements, fixture capture | **complete** — measured at mainnet tip 2026-08-12, [`docs/benchmarks.md`](docs/benchmarks.md) |
-| 1 | Accumulator core (Utreexo wrapper + IMT) | **complete for the IMT**; transparent side blocked, see below. One DoD item unmet: `imt.rs` branch coverage is 41/48, not the required 100% — see [`PLAN.md`](PLAN.md) |
+| 1 | Accumulator core (Utreexo wrapper + IMT) | **complete** — DoD met as amended: 100% of *reachable* branches on `imt.rs` (83/88; the five that remain are defensive guards no public API can reach, enumerated in [`CLAUDE.md`](CLAUDE.md)) |
 | 2 | Chain state transition + differential harness | **complete** — four fixture slices agree with an independent oracle and with `zebrad`; 10⁶ randomised reorgs replay byte-identical to a cold replay; **all 3.45M mainnet blocks replay from genesis to tip with zero errors** |
-| 3 | Persistence, snapshots, crash consistency | **complete** — versioned atomic snapshots; restart costs 21s instead of a 7-hour replay |
-| 4 | Bridge node (proof serving) | next |
-| 5 | Compact state node + published benchmarks | not started |
-| 6 | Fuzzing, DoS analysis, privacy review | not started |
-| 7 | ZIP draft — gated on 5 and 6 | not started |
+| 3 | Persistence, snapshots, crash consistency | **complete** — versioned atomic snapshots; 25 SIGKILLs mid-save left the store intact every time; restart costs 21 s instead of a 7-hour replay |
+| 4 | Bridge node (proof serving) | **complete** — DoD met over a real socket; sparse paths cut wallet proofs 53.2% and bundle overhead to 152.6%. Transport is binary over HTTP, not gRPC ([D27](docs/design.md)) |
+| 5 | Compact state node + published benchmarks | **complete** — the headline measured (above), storage 693 B against 31.7 GiB, and 500 blocks shadowed against Zebra at the live tip with zero divergences |
+| 6 | Fuzzing, DoS analysis, privacy review | **in progress** — see below |
+| 7 | ZIP draft — gated on 5 and 6 | **gated shut** — CLAUDE.md requires that the benefit be real *and* the privacy review clean. The review is negative ([D35](docs/design.md)), Phases 6b–6c tried to change that and failed ([D40](docs/design.md), [D41](docs/design.md)), and [D44](docs/design.md) found deployed PIR doing the job properly. The gate holds for a better-understood reason than when it was first shut |
+
+Phase 6 in detail, since it is where the work currently is:
+
+| Step | Scope | Status |
+|---|---|---|
+| 6a | DoS hardening and the privacy review | slowloris denial from one idle socket closed ([D34](docs/design.md)); privacy review complete and **negative** ([D35](docs/design.md)); external-review requirement dropped deliberately, see [`PLAN.md`](PLAN.md) |
+| 6b | Prefix cohorts — can the headline query be made private? | **built, measured, and re-scoped.** 12,288 members for 384.9 KB at 32 bytes a member ([D38](docs/design.md)), then per-wallet anonymity measured at 1 ([D40](docs/design.md)) |
+| 6c | Serving cohorts: bridge methods and the epoch policy | **complete** — the request carries the bucket and never the value, asserted on the encoded bytes; a too-narrow prefix is refused rather than silently widened ([D42](docs/design.md), [D43](docs/design.md)) |
+| 6d | Unblock the last two fuzz targets | **complete** — the upstream fix is pinned in *both* manifests, guarded by a test, after the duplicate pin made a working fix look falsified ([D33](docs/design.md)) |
+| 6e | Fuzz budgets, and what "saturated" means | **in progress** — 103 billion executions, zero crashes, and the budgets were backwards ([D45](docs/design.md)). A corrected campaign is running now |
+
+**The fuzzing DoD ("72 h clean") is met for 4 of 7 targets.** `forest_decode` and `snapshot_decode` spent four phases excluded on the upstream panic above, and `wire_request_decode`'s decoder changed with wire v2, so its clean run covered different code. The campaign running now closes all three.
+
+Two results from the fuzzing worth stating on their own. **Three targets that looked stuck were simply finished** — measurement showed every reachable region of their decoders already covered, so the natural next move (write a structured input generator) would have bought nothing. And **a saturated target is not a useless one**: its product is the absence of a crash, which is a different claim from new coverage.
 
 The nullifier indexed Merkle tree is implemented, differentially tested against an independent oracle, pinned with checked-in vectors, and benchmarked: non-membership verification is **5.1 µs and flat** from 10⁴ to 10⁶ nullifiers at the production depth of 40, which is the asymptotic claim this project rests on. See [`docs/benchmarks.md`](docs/benchmarks.md).
 
-**The transparent side is blocked upstream.** `rustreexo` 0.6.0 generates invalid inclusion proofs for any leaf whose sibling has been deleted — reproduced with stock upstream types, so it is not our domain separation. A bridge node cannot serve transparent proofs across blocks until it is fixed. The defect is pinned in [`crates/zutreexo-accumulator/tests/upstream_rustreexo.rs`](crates/zutreexo-accumulator/tests/upstream_rustreexo.rs), which fails loudly if upstream fixes it. Analysis and options in [`docs/design.md`](docs/design.md) D10. The nullifier IMT is unaffected — it depends on nothing but BLAKE2b.
+**The transparent side was blocked upstream, and is not any more.** `rustreexo` 0.6.0 generated invalid inclusion proofs for any leaf whose sibling had been deleted — reproduced with stock upstream types, so it was not our domain separation. The workspace now pins a fork carrying the fix ([D25](docs/design.md)), and the defect stays pinned in [`crates/zutreexo-accumulator/tests/upstream_rustreexo.rs`](crates/zutreexo-accumulator/tests/upstream_rustreexo.rs). Fuzzing this project's decoders later found three more bugs in the same upstream crate: a panic and an unbounded recursion that overflows the stack, both reachable from a serialized forest ([D33](docs/design.md)), plus a `serialize` that panics instead of returning the error its signature promises when the writer fails. Upstream fixed the first two independently; the third is [an open PR](https://github.com/mit-dci/rustreexo/pull/160). The nullifier IMT is unaffected — it depends on nothing but BLAKE2b.
 
 Decisions taken so far, with reasoning, are in [`docs/design.md`](docs/design.md). The phased plan with per-phase definitions of done is in [`CLAUDE.md`](CLAUDE.md). Current status, branch naming, and the gaps being carried deliberately are in [`PLAN.md`](PLAN.md).
 
@@ -157,16 +173,33 @@ ZUTREEXO_HARNESS_DEPTH=14 ZUTREEXO_ROOT_CHECK_EVERY=1 \
   cargo test --release -p zutreexo-testkit --test harness_replay
 ```
 
+### Fuzzing
+
+Seven targets, budgeted per target rather than on one clock, because time to saturation across them spans from execution 101 to eighteen hours. [`fuzz/README.md`](fuzz/README.md) explains the budgets and how to read a run.
+
+```bash
+cargo +nightly fuzz run bundle_decode -- -max_total_time=600
+nohup scripts/fuzz_72h.sh > fuzz-runs/driver.log 2>&1 &   # the full campaign
+scripts/fuzz_saturation.py                                 # what a run actually bought
+```
+
 ### Fixtures
 
 One 200-block slice (`fixtures/nu5-orchard.jsonl`, 1.85 MB) is committed, because every test touching `zutreexo-chain` is gated on a fixture being present — with all of them ignored, CI executed none of that crate. The other three slices are 63 MB and stay gitignored; regenerate them with `scripts/measure_baseline.sh` against a synced node. Tests skip, loudly, when a slice is absent.
 
 ## Open questions
 
-Neither is resolved, and the project proceeds anyway — this is a build-to-learn exercise, and discovering that the answer makes the work redundant is a valid outcome to reach by building rather than by speculating.
+This is a build-to-learn exercise. Discovering that an answer makes the work redundant is a valid outcome, and reaching it by building beats reaching it by speculating — which is roughly what happened.
 
-- **Does Tachyon's PIR work subsume the nullifier use case?** Delivering Tachyon was described as the ecosystem's next protocol priority at the 2026 Summer ZODL Summit, and private information retrieval was a summit topic. If PIR gives wallets private nullifier queries with a better privacy story, this project's main benefit evaporates.
-- **Will NU7 change block times?** The coinholder vote opening late August 2026 includes 3× faster blocks, which would triple nullifier growth rates and invalidate any capacity ceiling extrapolated from today. Ceilings here are therefore derived from transaction counts, not block counts.
+**Resolved, and not in this project's favour:**
+
+- **Does PIR subsume the nullifier use case?** For a light client asking "was my note spent", yes. `spendability-pir` is deployed and wired into wallets, and it costs 1.78× the bandwidth of the mechanism built here while giving a privacy property the crowd-based approach measurably does not have ([D44](docs/design.md)). This was originally framed as "does Tachyon subsume this", treated as a blocking gate, and dropped as a gate in August; the answer arrived anyway, from a different direction, and it was worth more as a measurement than the gate would have been as a wait.
+- **Will NU7 change block times?** Not a live consideration here. Capacity ceilings are derived from transaction counts rather than block counts, so a block-time change moves nothing that was fixed on that basis.
+
+**Still open:**
+
+- **Is the authenticated, full-history path worth anything to anyone?** It is what survives D44: a proof rather than an answer, no window limit, and a primitive a validator could check. Nobody has asked for it.
+- **Would the compact-node result survive a real deployment?** 693 bytes against 31.7 GiB is measured, but against one node, on one box, shadowing 500 blocks.
 
 ## Licensing
 
@@ -179,6 +212,8 @@ MIT OR Apache-2.0, matching `librustzcash` and Zebra. `deny.toml` enforces the b
 - **[Zebra](https://github.com/ZcashFoundation/zebra)** — the Rust Zcash validator; our oracle.
 - **[Zaino](https://github.com/zingolabs/zaino)** — the Rust indexer replacing `lightwalletd`; likely integration point for the bridge node rather than a fork of our own.
 - **Slipstream, Warp Sync, pepper-sync** — wallet sync engines. Different layer; read them to understand what this project is *not* solving.
+- **[spendability-pir](https://github.com/valargroup/spendability-pir)** and its Ironwood fork [p2p-spendability-pir](https://github.com/distractedm1nd/p2p-spendability-pir) — private spend-status lookup with SimplePIR over a bucketed hash table. Structurally the same partition-and-scan as this project's prefix cohorts, with the bucket index hidden by cryptography instead of by crowd size. Read [D44](docs/design.md) before reading the cohort code.
+- **[Zakura](https://github.com/zakura-core/zakura)** — a Zebra fork with native pruning and much faster sync, and the node the PIR work above runs against.
 
 ## Contributing
 
