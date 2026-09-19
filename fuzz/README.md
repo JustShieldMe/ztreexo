@@ -77,9 +77,12 @@ when the clock cut it off**, with its last one twenty-five minutes before the
 end. Do not read a quiet stretch as exhaustion — its gaps between discoveries
 ran 3.0 billion executions and then 0.34 billion. Discovery is bursty.
 
-`scripts/fuzz_72h.sh` now encodes this: 7 days and `-fork=8` for
-`bundle_decode`, 24 h each for the rest, and it runs the analysis itself when
-it finishes. Get the same for any run, including one still going:
+`scripts/fuzz_72h.sh` encodes the budgets and runs the analysis itself when it
+finishes. After the 2026-09-10 seven-target run
+([D45](../docs/design.md)), the budgets are 7 days and `-fork=8` for
+`snapshot_decode`, the only target cut off while still discovering, and 72 h
+for the rest, which is the Phase 6 DoD's floor. `bundle_decode` had the long
+slot for that run and reached its ceiling in 2.1 hours. Get the same for any run, including one still going:
 
 ```bash
 scripts/fuzz_saturation.py                      # a finished run states its own duration
@@ -101,11 +104,16 @@ for all targets is wrong in both directions at once. Before the next run:
   the current directory and leaves the main log holding one worker's numbers,
   so the analysis under-reports. Two forks took `bundle_decode` from ~18k to
   ~40k exec/s.
-- **A target that gains zero edges needs seeds, not hours.** Being stuck at the
-  same edge count for tens of billions of executions means mutation cannot get
-  further from the corpus it has. Improve the seeds or add a structured
-  `Arbitrary` generator — the same failure mode as the checksum above, one level
-  out: there the checksum hid the parser, here the input distribution does.
+- **A target that gains zero edges may simply be finished, so measure before
+  re-seeding.** Stuck at one edge count can mean mutation can't get past the
+  corpus. It can also mean there is nothing left to reach. D45 found the second
+  for all three zero-gain targets. Tell them apart with
+  `cargo fuzz coverage <target>` and `llvm-cov show`. Uncovered regions that are
+  reachable call for seeds or a structured `Arbitrary` generator. Uncovered
+  regions that are all unreachable error arms mean the target is done.
+  libFuzzer runs the empty input at startup, but the coverage report replays
+  saved files only, so the report shows empty-input paths as uncovered when
+  they aren't.
 
 Saturation does not make a run pointless — its product is the *absence* of a
 crash, and that accrues either way. It makes the *schedule* wrong.

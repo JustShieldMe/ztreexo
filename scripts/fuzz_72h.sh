@@ -17,8 +17,26 @@
 #
 # Hence two budgets below. Note what the split is really saying: for a saturated
 # target more hours is the wrong lever entirely, and its budget here buys crash
-# coverage, not code coverage. Widening *that* needs better seeds or a
-# structured `Arbitrary` generator (D36), which is a code change, not a flag.
+# coverage, not code coverage.
+#
+# D36 went on to say that widening a zero-gain target's coverage needs better
+# seeds or a structured generator. D45 measured that claim and it was wrong for
+# all three: `compact_state_decode`, `nonmembership_decode` and
+# `utxo_proof_decode` already execute every reachable region of their decoders.
+# They are finished, not stuck.
+#
+# # Which target gets the long slot (D45)
+#
+# The 2026-09-10 run gave the long slot to `bundle_decode`, the target D36 had
+# seen still discovering. With eight forks it reached its ceiling in 2.1 hours
+# and then ran for seven days. Meanwhile `snapshot_decode`, on one worker and a
+# 24 h clock, found its last new edge at 18.1 h. That made it the only target
+# cut off while still discovering, and the 10x rule gives it 7.5 days.
+#
+# So `snapshot_decode` gets the long slot and the forks now. Everything else
+# gets 72 h. For each of them the 10x rule asks for less, but CLAUDE.md
+# Phase 6's DoD ("fuzzers run 72 h clean") asks for 72, and the DoD sets the
+# floor.
 #
 # Re-derive these numbers after any run — the script prints the analysis at the
 # end, or run `scripts/fuzz_saturation.py` by hand against `fuzz-runs/`.
@@ -34,9 +52,7 @@
 # so under the fuzzer both died within seconds.
 #
 # The fork fix is now pushed and pinned in **both** manifests, and all five
-# committed crash artifacts replay clean. Their corpora start small — 8 and 100
-# inputs against `bundle_decode`'s 881 — because they have never had a real run,
-# so treat their first campaign as exploration rather than confirmation.
+# committed crash artifacts replay clean.
 #
 # Usage: nohup scripts/fuzz_72h.sh > fuzz-runs/driver.log 2>&1 &
 
@@ -46,7 +62,8 @@ REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUT="${ZUTREEXO_FUZZ_OUT:-$REPO/fuzz-runs}"
 RSS_MB="${ZUTREEXO_FUZZ_RSS_MB:-4096}"
 
-# Still finding edges at 71.5 h, so give it days and the spare cores.
+# The one target still finding edges when its clock ran out (D45), so it gets
+# days and the spare cores.
 #
 # `-fork=N` rather than `-jobs=N -workers=N`, for two measured reasons: `-jobs`
 # writes each worker's output to `fuzz-<n>.log` in the *current directory*
@@ -62,27 +79,34 @@ RSS_MB="${ZUTREEXO_FUZZ_RSS_MB:-4096}"
 LONG_SECS="${ZUTREEXO_FUZZ_LONG_SECS:-604800}"    # 7 d
 LONG_WORKERS="${ZUTREEXO_FUZZ_WORKERS:-8}"
 
-# Saturated within minutes. This budget is for crash-hunting; at these rates it
-# is still tens of billions of executions each.
-SHORT_SECS="${ZUTREEXO_FUZZ_SHORT_SECS:-86400}"   # 24 h
+# Saturated, or never unsaturated, and set by the Phase 6 DoD rather than by
+# coverage. This is crash-hunting: new values through paths already covered.
+SHORT_SECS="${ZUTREEXO_FUZZ_SHORT_SECS:-259200}"  # 72 h
 
 # target:seconds:workers
 TARGETS=(
-  "bundle_decode:$LONG_SECS:$LONG_WORKERS"
+  "snapshot_decode:$LONG_SECS:$LONG_WORKERS"
+  # Reached its ceiling in 2.1 h on eight forks (D45); the rule says 21 h.
+  "bundle_decode:$SHORT_SECS:1"
+  "forest_decode:$SHORT_SECS:1"
+  "wire_request_decode:$SHORT_SECS:1"
+  # Every reachable region already covered (D45). These run for crashes only.
   "utxo_proof_decode:$SHORT_SECS:1"
   "compact_state_decode:$SHORT_SECS:1"
-  "wire_request_decode:$SHORT_SECS:1"
   "nonmembership_decode:$SHORT_SECS:1"
-  # Never fuzzed before D33 was fixed, so their corpora are thin and the first
-  # hours are corpus-building rather than crash-hunting. Same budget as the
-  # other short targets; revisit once there is a saturation curve to read.
-  "forest_decode:$SHORT_SECS:1"
-  "snapshot_decode:$SHORT_SECS:1"
 )
 
 mkdir -p "$OUT"
 cd "$REPO"
 say() { echo "[$(date -Is)] $*"; }
+
+# Artifacts from earlier runs stay in `fuzz/artifacts/` on purpose: they are
+# regression seeds. So "artifacts in the directory" is not "crashes this run
+# found". The 2026-09-10 run reported `artifacts=2` and `artifacts=3` for the
+# five D33 files from August, which read as new crashes until checked (D45).
+# Everything newer than this stamp is from this run.
+STAMP="$OUT/.run-start"
+touch "$STAMP"
 
 say "building ${#TARGETS[@]} targets"
 for spec in "${TARGETS[@]}"; do
@@ -114,16 +138,19 @@ say "all targets finished"
 
 for spec in "${TARGETS[@]}"; do
   t="${spec%%:*}"
-  # `ls | grep -c .` returns 1 when the count is zero, so a `|| echo 0` fallback
-  # appends a *second* line and the log reads "artifacts=0\n0". wc -l does not.
-  crashes=$(ls -1 "$REPO/fuzz/artifacts/$t"/ 2>/dev/null | wc -l)
+  # Counted with `find | wc -l`, never `ls | grep -c .`: that returns 1 when
+  # the count is zero, so a `|| echo 0` fallback appends a *second* line and
+  # the log reads "artifacts=0\n0".
+  dir="$REPO/fuzz/artifacts/$t"
+  new=$(find "$dir" -type f -newer "$STAMP" 2>/dev/null | wc -l)
+  old=$(find "$dir" -type f ! -newer "$STAMP" 2>/dev/null | wc -l)
   # Sequential runs report a `stat::` block; fork mode does not, so fall back to
   # the running count on its last line.
   execs=$(grep -oE 'stat::number_of_executed_units: *[0-9]+' "$OUT/$t.log" | grep -oE '[0-9]+$' | tail -1)
   if [ -z "$execs" ]; then
     execs=$(grep -oE '^#[0-9]+:' "$OUT/$t.log" | tail -1 | tr -cd '0-9')
   fi
-  say "$t: artifacts=$crashes execs=${execs:-unknown}"
+  say "$t: new_artifacts=$new (pre-existing $old) execs=${execs:-unknown}"
 done
 
 # The point of the run is the analysis, so do not make anyone remember to run
