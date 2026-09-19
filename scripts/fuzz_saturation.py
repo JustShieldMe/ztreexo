@@ -325,8 +325,12 @@ def main() -> int:
     saturated = [t for t in targets if (t.edges_gained or 0) == 0]
     if saturated:
         print()
-        print("Saturated -- gained no edges. These need seeds or a structured")
-        print("generator, not more hours (D36):")
+        # D36 said these need seeds. D45 measured three of them and found every
+        # reachable region already covered, so "stuck" and "finished" look
+        # identical from here. Only a coverage report can tell them apart.
+        print("Saturated -- gained no edges. More hours will not help. Either the")
+        print("seeds cannot reach further or there is nothing left to reach; check")
+        print("with `cargo fuzz coverage <target>` before re-seeding (D45):")
         for t in saturated:
             print(f"  {t.name}: {t.final_exec:,} executions, still at {t.final_cov} edges")
 

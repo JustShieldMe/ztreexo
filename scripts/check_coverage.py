@@ -146,7 +146,7 @@ FILE_FLOORS: dict[str, dict[str, float]] = {
     # regression cannot recur unnoticed.
     "crates/zutreexo-accumulator/src/utreexo.rs": {
         "regions": 91.9,
-        "lines": 91.5,
+        "lines": 91.1,
     },
     # The three below are the reason the committed fixture exists. Each one
     # measured 0.00% before it, because their only tests are fixture-gated.
@@ -443,8 +443,16 @@ FILE_FLOORS: dict[str, dict[str, float]] = {
 # pointed upward rather than lowering it whenever new code lands slightly below
 # the mean.
 #
-# Measured 92.75 / 93.58 / 86.07 on **nightly-2026-09-06**, CI-shaped (one
-# fixture slice), at Phase 6c. Floors sit ~0.15 below.
+# Floors are the **minimum across three measured configurations**, less 0.3, all
+# CI-shaped (one fixture slice). Phase 6d.
+#
+# **`nightly-2026-09-06` is not the same build as `nightly` on 2026-09-06.**
+# The dated channel installs rustc `f248f4038 2026-09-05`; plain `nightly` that
+# day was `5a2be9f5f 2026-09-06`. They report different region counts -- the
+# workspace reads 94.46 on the dated one and 92.75 on the other -- so a floor
+# baselined with `cargo +nightly` does not hold under `cargo
+# +nightly-2026-09-06`, which is what the workflow runs. That cost another
+# round.
 #
 # ## Read this before touching a number here
 #
@@ -479,9 +487,10 @@ FILE_FLOORS: dict[str, dict[str, float]] = {
 # The step now spells out `cargo +nightly-2026-09-06`.
 #
 # The second half is belt and braces, and it is here because this gate has now
-# been wrong three times: **every region and line floor is set to the minimum of
-# the two toolchains' measurements, less 0.3.** Six floors are looser than a
-# pure 09-06 baseline would allow:
+# been wrong four times: **every region and line floor is set to the minimum of
+# every configuration measured, less 0.3.** Those are nightly-2026-08-15,
+# nightly `5a2be9f5f`, and `nightly-2026-09-06` with the D33 fork pin. Seven
+# floors are looser than a single-baseline reading would allow:
 #
 #     extract.rs     lines     90.22 / 88.04  -> 87.7
 #     pool.rs        lines     86.41 / 85.45  -> 85.1
@@ -489,6 +498,8 @@ FILE_FLOORS: dict[str, dict[str, float]] = {
 #     source.rs      regions   94.50 / 94.11  -> 93.8
 #     limits.rs      regions   98.16 / 96.30  -> 96.0
 #     limits.rs      lines     97.30 / 95.88  -> 95.5
+#     utreexo.rs     lines     91.86 / 91.42  -> 91.1   (moved by the D33 pin,
+#                                                        not by a toolchain)
 #
 # That costs a point or two of ratchet on six entries and buys a gate that stays
 # green if the pin is ever bypassed again. Given the choice between a tight gate

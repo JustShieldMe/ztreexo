@@ -1037,8 +1037,8 @@ and narrower than the claim written next to it.
 
 ### The fix, written and verified
 
-Two commits on `d33-deserialize-no-panic` in the fork clone, **not yet pushed**
-— that is the user's to do:
+Two commits on `d33-deserialize-no-panic` in the fork clone. **Pushed
+2026-09-07 and pinned in both manifests 2026-09-08:**
 
 1. The node-type tag returns `io::Error::new(InvalidData, ...)` instead of
    panicking, matching what `node_hash/mod.rs:316` already does for an unknown
@@ -1062,9 +1062,40 @@ The full workspace suite passes against the patched fork, `upstream_rustreexo.rs
 included. Each fork-side regression test was confirmed to fail with only its own
 fix reverted.
 
-**The `catch_unwind` stays** until the pin moves to the pushed revision. It
-costs the fuzzer signal (above), but removing it before the pin moves would
-reopen the panic it was written for.
+**The `catch_unwind` stays** for now. It costs the fuzzer signal (above), but
+it is cheap and it is the only thing standing between a future unpinning and
+the panic it was written for. Removing it is a separate decision from moving
+the pin, and neither the pin nor the fuzz run needs it gone.
+
+### Closed out 2026-09-08 — both targets fuzz, and the pin lived in two places
+
+The pin moved to `8931ab8b6a01c75bfb784d128b9c20df83217aee`, which carries D10
+plus both D33 fixes. `forest_decode` and `snapshot_decode` are back in
+`scripts/fuzz_72h.sh`, so Phase 6's fuzzing half now covers **7 of 7 targets**
+rather than 5.
+
+| target | corpus before | after a smoke run | crashes |
+|---|---|---|---|
+| `forest_decode` | 8 | **514** (10M runs, 209 s) | none |
+| `snapshot_decode` | 100 | **361** (300k runs, 120 s) | none |
+
+Those corpus sizes are the real measure of how thoroughly the exclusion had
+blinded the campaign: eight inputs for `forest_decode` after four phases,
+against `bundle_decode`'s 881. Note also the throughput gap — 48k exec/s versus
+2.5k — which is the number to budget the next campaign from, not the clock.
+
+**A defect the fix itself walked into.** `fuzz/` is deliberately outside the
+workspace, so it carries its **own** `[patch.crates-io]` block. Bumping only
+the workspace pin left the fuzz crate on `dc368cc`, and all five crash
+artifacts still reproduced — against a bug that had already been fixed. The
+replay read as *"the fix does not work"*. The only give-away was the path in
+the panic message naming `dc368cc`.
+
+That is a nasty failure mode, because the evidence points at the wrong thing:
+it looks like a falsified fix rather than a stale pin.
+`crates/zutreexo-testkit/tests/pins_agree.rs` now fails if the two revs ever
+diverge, and separately if either is abbreviated rather than a full 40-character
+hash. Confirmed to fire by reverting one pin.
 
 ---
 
@@ -1290,6 +1321,120 @@ Phase 7 does not change this. Committing accumulator roots on-chain fixes the
 *trust* caveat — the wallet would no longer need a bridge's word for the root —
 and does nothing about the leak, because the wallet must still ask someone for
 a proof.
+
+---
+
+## D45 — The seven-target campaign: 103 billion executions, no crashes, and three "saturated" targets that were simply finished
+
+**Phase 6.** This was the first run with all seven targets. It became possible
+once the [D33](#d33--memforestdeserialize-is-not-total-on-malformed-input)
+fix was pinned in both manifests. The run launched 2026-09-10 04:06:54 UTC and
+finished 2026-09-17 04:06:59 with **zero crashes, zero hangs and zero OOMs
+across 103,117,702,991 executions**.
+
+The driver reported `artifacts=2` for `forest_decode` and `artifacts=3` for
+`snapshot_decode`. Those are the five D33 files, all dated 2026-08-22. The
+driver counted every file in the artifact directory rather than the files the
+run created. `scripts/fuzz_72h.sh` now counts only artifacts newer than the
+run's start and reports the older ones separately.
+
+The driver's own saturation analysis follows, in the same format as
+[D36](#d36--fuzz-budget-four-of-five-targets-saturated-in-under-two-hours).
+"After it" means the share of the run that came after the last new edge.
+
+| target | budget | executions | edges | last new edge | after it |
+|---|---|---|---|---|---|
+| `bundle_decode` | 7 d, 8 forks | 72.1e9 | 823 → 826 (+3) | 2.1 h | 98.8% |
+| `wire_request_decode` | 24 h | 17.6e9 | 39 → 187 (+148) | <1 min | 100% |
+| `utxo_proof_decode` | 24 h | 6.4e9 | 184 → 184 | never | 100% |
+| `compact_state_decode` | 24 h | 5.7e9 | 301 → 301 | never | 100% |
+| `nonmembership_decode` | 24 h | 0.66e9 | 323 → 323 | never | 100% |
+| `forest_decode` | 24 h | 0.66e9 | 305 → 313 (+8) | 31 min | 97.8% |
+| `snapshot_decode` | 24 h | 0.04e9 | 1097 → 1217 (+120) | **18.1 h** | **24.7%** |
+
+### `bundle_decode` was short of workers, not clock
+
+D36 left this question open. There, one worker found its last edge at 71.5 h,
+and the 10× rule asked for about 30 days. Here, eight forks started from D36's
+carried-over corpus at 823 edges, reached 826 by 2.1 h, and found nothing in
+the remaining 166.9 hours and roughly 71 billion executions. The rule's answer
+from this run is **21 hours**. D36's advice to "budget `bundle_decode`-class
+targets in weeks" is withdrawn. The seven days mostly confirmed a ceiling that
+the forks had reached on the first morning.
+
+The feature count moved late while the edge count didn't. Features rose from
+2,981 to 3,000 between days four and five. Mid-run, I called the target
+finished on day four, then withdrew the call when features moved. Both calls
+were reading features. The edge count, which is what the stopping rule reads,
+never moved after 2.1 h. D36's distinction applies again: a new feature is not
+a new edge.
+
+### `snapshot_decode` is the target that was short-changed
+
+It was still finding code when it stopped. It had +120 edges, the last at
+18.1 h of a 24 h budget. It ran on one worker at about 465 executions per
+second, roughly 16× slower than the next-slowest target, so it had the fewest
+executions of the seven (40 million) and the most code still to find. Each
+input is re-checksummed before decoding (the D24 reseal), and every input that
+parses is rebuilt into a full chain state. I haven't profiled which of those
+dominates. The 10× rule asks for **7.5 days**. It gets the long slot and the forks next time. This run gave
+both to the wrong target.
+
+### The three zero-gain targets are not a seeding problem
+
+D36 §3 said: "for any target that gains zero edges, the next iteration's work
+item is corpus and harness." I carried that into the next plan as "build
+structured seeds for the three stuck targets." On 2026-09-19 I measured the
+premise first, which is how it should have been done in D36.
+
+`cargo fuzz coverage` replays each corpus through an instrumented build.
+**Every line of all three decode paths executes.** No region on any of them
+goes unexecuted except those in this table:
+
+| never-executed region | why |
+|---|---|
+| `CompactState::read_body`: `reader.hash()?` failing inside the roots loop | `DeclaredLengthExceedsInput` two lines above has already guaranteed the bytes |
+| `decode_utxo_proof`: `take(remaining())?` failing | cannot fail by construction |
+| `validate_utxo_proof_header`: `take(targets_bytes)?` failing | bounds-checked on the line above |
+| `validate_utxo_proof_header`: `hashes_len * 33` overflowing | `hashes_len` is already bounded by the input length |
+| `rustreexo` `Proof::deserialize`: all three read-error arms | `validate_utxo_proof_header` rejects every input that could reach them. That is the D29 guard doing its job, not a gap |
+| `reader.u8()?` on the version byte (utxo, nonmembership) | reachable, but only by the empty input (below) |
+
+libFuzzer runs the empty input at startup, so its `cov` figure already counts
+that path. The coverage report misses it only because it replays saved files,
+and no corpus contains an empty file. I checked by adding one to a copy of each
+corpus. `INITED cov` stayed at 323, 184 and 301.
+
+**So 301, 323 and 184 are the whole reachable surface of those decoders, not a
+ceiling that mutation can't get past.** The seed corpora already held valid
+encodings from `fuzz_seeds.rs`, and mutation reached every error arm from them
+long ago. A structured generator would add nothing, and it has not been built.
+For these targets, more hours buy what D36 called crash-hunting: new values
+through paths that are already covered. That is worth something, but it isn't
+coverage, and no generator changes that.
+
+A caveat on the method. The fuzz coverage build carries no branch
+instrumentation, so this rests on region coverage. Region coverage marks each
+`?` error arm as a region of its own, which is the granularity the argument
+needs.
+
+### Phase 6 DoD
+
+The DoD says "fuzzers run 72 h clean." D36 met it for five targets. This run
+gave six targets 24 h each. `forest_decode` and `snapshot_decode` have never
+run for 72 hours. `wire_request_decode`'s decoder has changed since D36 (wire
+v2, D42), so D36's clean 72 h covered a different decoder. **The DoD is not
+met for three of seven targets.** The next campaign closes it.
+
+### The next campaign
+
+| target | budget | why |
+|---|---|---|
+| `snapshot_decode` | 7 d, 8 forks | the only target still discovering; the rule says 7.5 d |
+| the other six | 72 h, 1 worker | the DoD floor. The rule wants less for each of them, and three have nothing left to find |
+
+This is 14 processes on 12 cores, the same load as this run, which held a
+steady 8.0–8.8 load average with the box otherwise quiet.
 
 ---
 

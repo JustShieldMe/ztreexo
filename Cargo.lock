@@ -2212,7 +2212,7 @@ dependencies = [
 [[package]]
 name = "rustreexo"
 version = "0.6.0"
-source = "git+https://github.com/USCMig/rustreexo?rev=dc368ccc6988f85c0754ef0b1dff9258f2789123#dc368ccc6988f85c0754ef0b1dff9258f2789123"
+source = "git+https://github.com/USCMig/rustreexo?rev=8931ab8b6a01c75bfb784d128b9c20df83217aee#8931ab8b6a01c75bfb784d128b9c20df83217aee"
 dependencies = [
  "bitcoin-io",
  "bitcoin_hashes",
