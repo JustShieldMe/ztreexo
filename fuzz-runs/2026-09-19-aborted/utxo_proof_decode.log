@@ -1,0 +1,204 @@
+warning: binary `bundle_decode` should have a kebab-case name
+   |
+ 1 | /home/blocknodes/ztreexo/fuzz/target/.../bundle_decode
+   |                                          ^^^^^^^^^^^^^
+   |
+   = note: `cargo::non_kebab_case_bins` is set to `warn` by default
+help: to change the binary name to `bundle-decode`, convert `bin.name`
+  --> Cargo.toml:44:8
+   |
+44 - name = "bundle_decode"
+44 + name = "bundle-decode"
+   |
+warning: binary `compact_state_decode` should have a kebab-case name
+   |
+ 1 | /home/blocknodes/ztreexo/fuzz/target/.../compact_state_decode
+   |                                          ^^^^^^^^^^^^^^^^^^^^
+   |
+help: to change the binary name to `compact-state-decode`, convert `bin.name`
+  --> Cargo.toml:65:8
+   |
+65 - name = "compact_state_decode"
+65 + name = "compact-state-decode"
+   |
+warning: binary `forest_decode` should have a kebab-case name
+   |
+ 1 | /home/blocknodes/ztreexo/fuzz/target/.../forest_decode
+   |                                          ^^^^^^^^^^^^^
+   |
+help: to change the binary name to `forest-decode`, convert `bin.name`
+  --> Cargo.toml:86:8
+   |
+86 - name = "forest_decode"
+86 + name = "forest-decode"
+   |
+warning: binary `nonmembership_decode` should have a kebab-case name
+   |
+ 1 | /home/blocknodes/ztreexo/fuzz/target/.../nonmembership_decode
+   |                                          ^^^^^^^^^^^^^^^^^^^^
+   |
+help: to change the binary name to `nonmembership-decode`, convert `bin.name`
+  --> Cargo.toml:79:8
+   |
+79 - name = "nonmembership_decode"
+79 + name = "nonmembership-decode"
+   |
+warning: binary `snapshot_decode` should have a kebab-case name
+   |
+ 1 | /home/blocknodes/ztreexo/fuzz/target/.../snapshot_decode
+   |                                          ^^^^^^^^^^^^^^^
+   |
+help: to change the binary name to `snapshot-decode`, convert `bin.name`
+  --> Cargo.toml:58:8
+   |
+58 - name = "snapshot_decode"
+58 + name = "snapshot-decode"
+   |
+warning: binary `utxo_proof_decode` should have a kebab-case name
+   |
+ 1 | /home/blocknodes/ztreexo/fuzz/target/.../utxo_proof_decode
+   |                                          ^^^^^^^^^^^^^^^^^
+   |
+help: to change the binary name to `utxo-proof-decode`, convert `bin.name`
+  --> Cargo.toml:51:8
+   |
+51 - name = "utxo_proof_decode"
+51 + name = "utxo-proof-decode"
+   |
+warning: binary `wire_request_decode` should have a kebab-case name
+   |
+ 1 | /home/blocknodes/ztreexo/fuzz/target/.../wire_request_decode
+   |                                          ^^^^^^^^^^^^^^^^^^^
+   |
+help: to change the binary name to `wire-request-decode`, convert `bin.name`
+  --> Cargo.toml:72:8
+   |
+72 - name = "wire_request_decode"
+72 + name = "wire-request-decode"
+   |
+warning: `zutreexo-fuzz` (manifest) generated 7 warnings
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on build directory
+    Finished `release` profile [optimized + debuginfo] target(s) in 0.43s
+warning: the following packages contain code that will be rejected by a future version of Rust: halo2_gadgets v0.5.0, primitive-types v0.12.2
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+warning: binary `bundle_decode` should have a kebab-case name
+   |
+ 1 | /home/blocknodes/ztreexo/fuzz/target/.../bundle_decode
+   |                                          ^^^^^^^^^^^^^
+   |
+   = note: `cargo::non_kebab_case_bins` is set to `warn` by default
+help: to change the binary name to `bundle-decode`, convert `bin.name`
+  --> Cargo.toml:44:8
+   |
+44 - name = "bundle_decode"
+44 + name = "bundle-decode"
+   |
+warning: binary `compact_state_decode` should have a kebab-case name
+   |
+ 1 | /home/blocknodes/ztreexo/fuzz/target/.../compact_state_decode
+   |                                          ^^^^^^^^^^^^^^^^^^^^
+   |
+help: to change the binary name to `compact-state-decode`, convert `bin.name`
+  --> Cargo.toml:65:8
+   |
+65 - name = "compact_state_decode"
+65 + name = "compact-state-decode"
+   |
+warning: binary `forest_decode` should have a kebab-case name
+   |
+ 1 | /home/blocknodes/ztreexo/fuzz/target/.../forest_decode
+   |                                          ^^^^^^^^^^^^^
+   |
+help: to change the binary name to `forest-decode`, convert `bin.name`
+  --> Cargo.toml:86:8
+   |
+86 - name = "forest_decode"
+86 + name = "forest-decode"
+   |
+warning: binary `nonmembership_decode` should have a kebab-case name
+   |
+ 1 | /home/blocknodes/ztreexo/fuzz/target/.../nonmembership_decode
+   |                                          ^^^^^^^^^^^^^^^^^^^^
+   |
+help: to change the binary name to `nonmembership-decode`, convert `bin.name`
+  --> Cargo.toml:79:8
+   |
+79 - name = "nonmembership_decode"
+79 + name = "nonmembership-decode"
+   |
+warning: binary `snapshot_decode` should have a kebab-case name
+   |
+ 1 | /home/blocknodes/ztreexo/fuzz/target/.../snapshot_decode
+   |                                          ^^^^^^^^^^^^^^^
+   |
+help: to change the binary name to `snapshot-decode`, convert `bin.name`
+  --> Cargo.toml:58:8
+   |
+58 - name = "snapshot_decode"
+58 + name = "snapshot-decode"
+   |
+warning: binary `utxo_proof_decode` should have a kebab-case name
+   |
+ 1 | /home/blocknodes/ztreexo/fuzz/target/.../utxo_proof_decode
+   |                                          ^^^^^^^^^^^^^^^^^
+   |
+help: to change the binary name to `utxo-proof-decode`, convert `bin.name`
+  --> Cargo.toml:51:8
+   |
+51 - name = "utxo_proof_decode"
+51 + name = "utxo-proof-decode"
+   |
+warning: binary `wire_request_decode` should have a kebab-case name
+   |
+ 1 | /home/blocknodes/ztreexo/fuzz/target/.../wire_request_decode
+   |                                          ^^^^^^^^^^^^^^^^^^^
+   |
+help: to change the binary name to `wire-request-decode`, convert `bin.name`
+  --> Cargo.toml:72:8
+   |
+72 - name = "wire_request_decode"
+72 + name = "wire-request-decode"
+   |
+warning: `zutreexo-fuzz` (manifest) generated 7 warnings
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on build directory
+    Finished `release` profile [optimized + debuginfo] target(s) in 0.38s
+warning: the following packages contain code that will be rejected by a future version of Rust: halo2_gadgets v0.5.0, primitive-types v0.12.2
+note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
+     Running `fuzz/target/x86_64-unknown-linux-gnu/release/utxo_proof_decode -artifact_prefix=/home/blocknodes/ztreexo/fuzz/artifacts/utxo_proof_decode/ -max_total_time=259200 -rss_limit_mb=4096 -print_final_stats=1 /home/blocknodes/ztreexo/fuzz/corpus/utxo_proof_decode`
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 4000498371
+INFO: Loaded 1 modules   (1023 inline 8-bit counters): 1023 [0x5cae40d73ab0, 0x5cae40d73eaf), 
+INFO: Loaded 1 PC tables (1023 PCs): 1023 [0x5cae40d73eb0,0x5cae40d77ea0), 
+INFO:      269 files found in /home/blocknodes/ztreexo/fuzz/corpus/utxo_proof_decode
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+INFO: seed corpus: files: 269 min: 1b max: 1233b total: 43209b rss: 57Mb
+#270	INITED cov: 184 ft: 451 corp: 75/7596b exec/s: 0 rss: 57Mb
+#524288	pulse  cov: 184 ft: 451 corp: 75/7596b lim: 4096 exec/s: 262144 rss: 424Mb
+#1048576	pulse  cov: 184 ft: 451 corp: 75/7596b lim: 4096 exec/s: 174762 rss: 428Mb
+#2097152	pulse  cov: 184 ft: 451 corp: 75/7596b lim: 4096 exec/s: 149796 rss: 428Mb
+#4194304	pulse  cov: 184 ft: 451 corp: 75/7596b lim: 4096 exec/s: 131072 rss: 429Mb
+#8388608	pulse  cov: 184 ft: 451 corp: 75/7596b lim: 4096 exec/s: 113359 rss: 430Mb
+#16777216	pulse  cov: 184 ft: 451 corp: 75/7596b lim: 4096 exec/s: 101067 rss: 432Mb
+#20920322	REDUCE cov: 184 ft: 451 corp: 75/7591b lim: 4096 exec/s: 97758 rss: 434Mb L: 22/1233 MS: 2 EraseBytes-CMP- DE: "\000\000\000\000\000\000\000\003"-
+#21288919	REDUCE cov: 184 ft: 451 corp: 75/7590b lim: 4096 exec/s: 97209 rss: 434Mb L: 21/1233 MS: 2 EraseBytes-CrossOver-
+#21299210	REDUCE cov: 184 ft: 451 corp: 75/7589b lim: 4096 exec/s: 97256 rss: 434Mb L: 20/1233 MS: 1 EraseBytes-
+#30155472	REDUCE cov: 184 ft: 451 corp: 75/7588b lim: 4096 exec/s: 95731 rss: 437Mb L: 178/1233 MS: 5 ChangeBit-CMP-ShuffleBytes-ChangeBit-EraseBytes- DE: "\000\000\000\000\000\000\001 "-
+#30424218	REDUCE cov: 184 ft: 451 corp: 75/7587b lim: 4096 exec/s: 95673 rss: 437Mb L: 177/1233 MS: 1 EraseBytes-
+#33554432	pulse  cov: 184 ft: 451 corp: 75/7587b lim: 4096 exec/s: 94519 rss: 438Mb
+#67108864	pulse  cov: 184 ft: 451 corp: 75/7587b lim: 4096 exec/s: 87838 rss: 442Mb
+#134217728	pulse  cov: 184 ft: 451 corp: 75/7587b lim: 4096 exec/s: 82646 rss: 445Mb
+#220011871	REDUCE cov: 184 ft: 451 corp: 75/7586b lim: 4096 exec/s: 80708 rss: 446Mb L: 26/1233 MS: 2 EraseBytes-ChangeBinInt-
+#268435456	pulse  cov: 184 ft: 451 corp: 75/7586b lim: 4096 exec/s: 79820 rss: 447Mb
+#536870912	pulse  cov: 184 ft: 451 corp: 75/7586b lim: 4096 exec/s: 77314 rss: 448Mb
+#1073741824	pulse  cov: 184 ft: 451 corp: 75/7586b lim: 4096 exec/s: 75302 rss: 449Mb
+#2147483648	pulse  cov: 184 ft: 451 corp: 75/7586b lim: 4096 exec/s: 68522 rss: 450Mb
+#4294967296	pulse  cov: 184 ft: 451 corp: 75/7586b lim: 4096 exec/s: 69925 rss: 450Mb
+#8589934592	pulse  cov: 184 ft: 451 corp: 75/7586b lim: 4096 exec/s: 69604 rss: 451Mb
