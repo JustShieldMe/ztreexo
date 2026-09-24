@@ -68,3 +68,5 @@ personal/
 
 # Node PID files dropped in the repo root by local devnet scripts.
 *.pid
+fuzz-runs/.run-start
+fuzz-runs/*.deadline
