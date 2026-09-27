@@ -1324,7 +1324,7 @@ a proof.
 
 ---
 
-## D46 — 94% of a transparent proof is digests, so the encoding is not the lever; the cache is, and it costs the thing the design sells
+## D46 — 94% of a transparent proof is digests, so the encoding is not the lever; the cache is, and what it costs depends on the era
 
 **Phase 6e, measured 2026-09-24.** `docs/benchmarks.md` puts **65.3% of a
 compact node's proof bandwidth in Utreexo inclusion proofs** and notes that "the
@@ -1430,11 +1430,11 @@ optimisation, and that the dial's exchange rate on this chain is roughly linear.
 
 ### What this does not yet say
 
-- **The distribution above is from 2017.** Heights 100,000–150,000 are early
+- ~~**The distribution above is from 2017.** Heights 100,000–150,000 are early
   mainnet, and transparent traffic then was mining payouts. A full-chain run
   measuring the tip era is in progress; if modern spends are younger, every
   number in the cache table improves, and if they are older it improves nothing.
-  **No cache should be built before that lands.**
+  **No cache should be built before that lands.**~~ **It landed — see below.**
 - **A window near the chain height is an artifact.** The 100,000-block row
   covers 99.6% of spends because at height 150,000 there is almost nothing
   older to spend. Rows at or above the measured height carry no information.
@@ -1444,11 +1444,54 @@ optimisation, and that the dial's exchange rate on this chain is roughly linear.
   size is unmeasured, and it is strictly larger than the leaf count suggests.
   Any decision on the 10,000-block option needs that number first.
 
+### Amended 2026-09-27 — the tip measurement landed, and it argues the other way
+
+`spend_age` over the whole chain, ages counted from height 3,300,000, took 43
+hours of wall clock sharing a box with the fuzz campaign. **Modern transparent
+spends are far younger than 2017's**, and every cache row improves:
+
+| cache window | coverage at 100k–150k (2017) | coverage at 3.3M–3.45M (tip) |
+|---|---|---|
+| 1 block | 0.2% | **5.6%** |
+| 6 blocks | 1.0% | **14.5%** |
+| 100 blocks | 7.5% | **29.7%** |
+| 1,000 blocks | 14.3% | **49.3%** |
+| 10,000 blocks | 28.0% | **73.3%** |
+| 50,000 blocks | 65.1% | 78.3% |
+
+Same-block spends went from 0.1% to **2.4%**. A 10,000-block window now covers
+**nearly three quarters of spends** where it covered barely a quarter in 2017.
+
+**The mean is the wrong statistic here and says so plainly: 329,182 blocks,
+which is larger than 2017's 35,725 even though the distribution is far
+younger.** It is bimodal. Modern transactional traffic is young — 49.3% inside
+1,000 blocks — while a dormant tail wakes occasionally: **7.8% of spends are of
+outputs older than 2,097,152 blocks**, coins moving after four years or more.
+Any single-number summary of this distribution is wrong, and a cache sized off
+the mean would be sized for the tail rather than the traffic.
+
+Since the 2017 measurement showed **bytes tracking coverage almost 1:1**, a
+10,000-block window plausibly saves around 70% of transparent proof bytes at the
+tip, against the 26.7% recorded above. That is a different conclusion from the
+one this entry reached, and it comes from the same tool pointed at the right
+era.
+
+**So the sentence "the cache trades away precisely the property the design is
+selling" stands only for 2017 traffic.** What it costs at the tip is not yet
+known, because the leaf count is the other half of the trade and has not been
+measured there: the live UTXO set has grown from 14.4M to **27,538,297**, so a
+window covering 73.3% of spends might hold a small fraction of that set or most
+of it, and the two answers point opposite ways. `cache_cost` over the tip era
+answers it, and needs the box the fuzz campaign is using until 2026-09-29.
+
 ### Consequence for the phase
 
-The next phase is not the encoder, and it is not a cache either until the tip
-measurement and the pollard size are known. Both tools are committed so the
-question can be re-asked cheaply against any height range.
+The next phase is not the encoder — that is settled at 2.3% of a bundle and
+should not be re-proposed. Whether it is a cache depends on two numbers that are
+now one: `cache_cost` at the tip, giving bytes saved *and* leaves held, plus the
+pollard size behind "leaves held", which remains a floor rather than the memory.
+Both tools are committed so the question can be re-asked cheaply against any
+height range, which is the reason the 2017 answer could be corrected at all.
 
 ---
 
