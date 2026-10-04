@@ -197,6 +197,22 @@ fn main() {
             born.remove(point);
         }
 
+        // Progress, to stderr so it never lands in a redirected result file.
+        // This run takes most of a day over the full chain, and a tool that
+        // prints only on completion cannot be distinguished from one that has
+        // wedged — which has already cost this project two multi-hour waits.
+        // The two phases have very different rates, so the line names which
+        // one is running.
+        if now % 25_000 == 0 {
+            let phase = if counts { "measuring" } else { "replaying" };
+            eprintln!(
+                "[{:>7.1}s] {phase} height {now} — {} live utxos, {:.0} blocks/s",
+                began.elapsed().as_secs_f64(),
+                born.len(),
+                f64::from(now).max(1.0) / began.elapsed().as_secs_f64().max(0.001),
+            );
+        }
+
         // Cache occupancy: leaves created within each window that are still
         // unspent. Sampled rather than recomputed per block, because counting
         // exactly would mean walking the whole map every block.
