@@ -69,8 +69,21 @@ struct Window {
     uncached_bytes: u64,
     /// Spends the cache covered, so the bridge omitted them.
     covered: u64,
-    /// Peak leaves held by the cache.
-    peak_leaves: u64,
+    /// Peak leaves held by the cache over the *whole replay*, genesis onward.
+    ///
+    /// Kept for comparison, and not the number to size a cache by. For a short
+    /// window the all-time peak lands in the early chain, where blocks carried
+    /// far more transparent outputs than they do now: the 10,000-block row
+    /// reported 2,608,783 at heights 0-150,000 and the identical figure over
+    /// the full chain, because both runs replay the same early peak and nothing
+    /// later exceeds it.
+    peak_leaves_all: u64,
+    /// Peak leaves held while measuring, i.e. at or above the warm-up height.
+    /// This is what a node running in the measured era would need.
+    peak_leaves_window: u64,
+    /// Sum and count of occupancy samples while measuring, for the mean.
+    occupancy_sum: u64,
+    occupancy_samples: u64,
     /// Blocks where the cache covered every spend, so no proof at all is sent.
     blocks_fully_covered: u64,
 }
@@ -222,7 +235,12 @@ fn main() {
                     .values()
                     .filter(|b| now.saturating_sub(**b) <= *w)
                     .count() as u64;
-                win.peak_leaves = win.peak_leaves.max(held);
+                win.peak_leaves_all = win.peak_leaves_all.max(held);
+                if counts {
+                    win.peak_leaves_window = win.peak_leaves_window.max(held);
+                    win.occupancy_sum += held;
+                    win.occupancy_samples += 1;
+                }
             }
         }
     }
@@ -244,23 +262,36 @@ fn main() {
     println!("proof bytes today  {full_bytes}");
     println!();
     println!(
-        "{:<12} {:>12} {:>14} {:>9} {:>13} {:>10}",
-        "window", "spends hit", "bytes sent", "saved", "cache leaves", "no-proof"
+        "{:<12} {:>12} {:>14} {:>9} {:>12} {:>12} {:>12} {:>10}",
+        "window",
+        "spends hit",
+        "bytes sent",
+        "saved",
+        "leaves mean",
+        "leaves peak",
+        "all-time pk",
+        "no-proof"
     );
     for (win, w) in windows.iter().zip(WINDOWS.iter()) {
         let saved = full_bytes.saturating_sub(win.uncached_bytes);
+        let mean = win
+            .occupancy_sum
+            .checked_div(win.occupancy_samples)
+            .unwrap_or(0);
         println!(
-            "{:<12} {:>11.1}% {:>14} {:>8.1}% {:>13} {:>10}",
+            "{:<12} {:>11.1}% {:>14} {:>8.1}% {:>12} {:>12} {:>12} {:>10}",
             format!("{w} blocks"),
             pct(win.covered, spends),
             win.uncached_bytes,
             pct(saved, full_bytes),
-            win.peak_leaves,
+            mean,
+            win.peak_leaves_window,
+            win.peak_leaves_all,
             win.blocks_fully_covered
         );
     }
     println!();
-    println!(
-        "'saved' is bytes off the wire; 'cache leaves' is the peak the node must hold to get it."
-    );
+    println!("'saved' is bytes off the wire. 'leaves mean' and 'leaves peak' are what a node");
+    println!("in the measured era holds to get it; 'all-time pk' includes the replay from");
+    println!("genesis and is shown only so the two can be compared, not to size a cache by.");
 }
