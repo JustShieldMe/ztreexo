@@ -134,7 +134,7 @@ The fuzzer earned its place immediately, finding a serialisation bug that had be
 | 3 | Persistence, snapshots, crash consistency | **complete** — versioned atomic snapshots; 25 SIGKILLs mid-save left the store intact every time; restart costs 21 s instead of a 7-hour replay |
 | 4 | Bridge node (proof serving) | **complete** — DoD met over a real socket; sparse paths cut wallet proofs 53.2% and bundle overhead to 152.6%. Transport is binary over HTTP, not gRPC ([D27](docs/design.md)) |
 | 5 | Compact state node + published benchmarks | **complete** — the headline measured (above), storage 693 B against 31.7 GiB, and 500 blocks shadowed against Zebra at the live tip with zero divergences |
-| 6 | Fuzzing, DoS analysis, privacy review | **in progress** — see below |
+| 6 | Fuzzing, DoS analysis, privacy review | **complete** — fuzzing DoD met 7 of 7, privacy review written (and negative), external review dropped deliberately. Measurement work on what to optimise next continues as 6f, below |
 | 7 | ZIP draft — gated on 5 and 6 | **gated shut** — CLAUDE.md requires that the benefit be real *and* the privacy review clean. The review is negative ([D35](docs/design.md)), Phases 6b–6c tried to change that and failed ([D40](docs/design.md), [D41](docs/design.md)), and [D44](docs/design.md) found deployed PIR doing the job properly. The gate holds for a better-understood reason than when it was first shut |
 
 Phase 6 in detail, since it is where the work currently is:
@@ -145,9 +145,10 @@ Phase 6 in detail, since it is where the work currently is:
 | 6b | Prefix cohorts — can the headline query be made private? | **built, measured, and re-scoped.** 12,288 members for 384.9 KB at 32 bytes a member ([D38](docs/design.md)), then per-wallet anonymity measured at 1 ([D40](docs/design.md)) |
 | 6c | Serving cohorts: bridge methods and the epoch policy | **complete** — the request carries the bucket and never the value, asserted on the encoded bytes; a too-narrow prefix is refused rather than silently widened ([D42](docs/design.md), [D43](docs/design.md)) |
 | 6d | Unblock the last two fuzz targets | **complete** — the upstream fix is pinned in *both* manifests, guarded by a test, after the duplicate pin made a working fix look falsified ([D33](docs/design.md)) |
-| 6e | Fuzz budgets, and what "saturated" means | **in progress** — 103 billion executions, zero crashes, and the budgets were backwards ([D45](docs/design.md)). A corrected campaign is running now |
+| 6e | Fuzz budgets, and what "saturated" means | **complete** — the budgets were backwards ([D45](docs/design.md)); corrected, the next campaign ran 87.3 billion executions with zero crashes and met the DoD |
+| 6f | What to optimise next | **in progress** — the planned proof re-encoding is worth 2.3% of a bundle and was dropped; a leaf cache saves 54.9% of transparent proof bytes at the tip, and what it costs a node in memory is being measured ([D46](docs/design.md)) |
 
-**The fuzzing DoD ("72 h clean") is met for 4 of 7 targets.** `forest_decode` and `snapshot_decode` spent four phases excluded on the upstream panic above, and `wire_request_decode`'s decoder changed with wire v2, so its clean run covered different code. The campaign running now closes all three.
+**The fuzzing DoD ("72 h clean") is met for 7 of 7 targets**, as of the campaign that finished 2026-09-30: 87.3 billion executions, zero crashes, every target at or past 72 hours continuous. `snapshot_decode` — the target D45 identified as starved — ran 144 hours and was still finding new code three and a half days in.
 
 Two results from the fuzzing worth stating on their own. **Three targets that looked stuck were simply finished** — measurement showed every reachable region of their decoders already covered, so the natural next move (write a structured input generator) would have bought nothing. And **a saturated target is not a useless one**: its product is the absence of a crash, which is a different claim from new coverage.
 

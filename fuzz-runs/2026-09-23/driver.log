@@ -1,0 +1,50 @@
+[2026-09-23T03:23:22+00:00] building 7 targets
+[2026-09-23T03:23:24+00:00] built
+[2026-09-23T03:23:24+00:00] launching snapshot_decode for 604800s with 8 worker(s)
+[2026-09-23T03:23:24+00:00] launching bundle_decode for 259200s with 1 worker(s)
+[2026-09-23T03:23:24+00:00] launching forest_decode for 259200s with 1 worker(s)
+[2026-09-23T03:23:24+00:00] launching wire_request_decode for 259200s with 1 worker(s)
+[2026-09-23T03:23:24+00:00] launching utxo_proof_decode for 259200s with 1 worker(s)
+[2026-09-23T03:23:24+00:00] launching compact_state_decode for 259200s with 1 worker(s)
+[2026-09-23T03:23:24+00:00] launching nonmembership_decode for 259200s with 1 worker(s)
+[2026-09-23T03:23:24+00:00] all launched; waiting
+[2026-09-24T03:00:23+00:00] all targets finished
+[2026-09-24T03:00:23+00:00] snapshot_decode: new_artifacts=0 (pre-existing 3) execs=100494
+[2026-09-24T03:00:23+00:00] bundle_decode: new_artifacts=0 (pre-existing 0) execs=unknown
+[2026-09-24T03:00:23+00:00] forest_decode: new_artifacts=0 (pre-existing 2) execs=unknown
+[2026-09-24T03:00:23+00:00] wire_request_decode: new_artifacts=0 (pre-existing 0) execs=unknown
+[2026-09-24T03:00:23+00:00] utxo_proof_decode: new_artifacts=0 (pre-existing 0) execs=unknown
+[2026-09-24T03:00:23+00:00] compact_state_decode: new_artifacts=0 (pre-existing 0) execs=unknown
+[2026-09-24T03:00:23+00:00] nonmembership_decode: new_artifacts=0 (pre-existing 0) execs=unknown
+[2026-09-24T03:00:23+00:00] saturation analysis
+target                           edges    last new edge   after it
+------------------------------------------------------------------
+snapshot_decode          1060->1217 (+157)           22.3 h      5.6%
+forest_decode            308->313 (+5)       #5,857,964     99.2%
+bundle_decode            815->815 (+0)            never    100.0%
+compact_state_decode     301->301 (+0)            never    100.0%
+nonmembership_decode     323->323 (+0)            never    100.0%
+utxo_proof_decode        184->184 (+0)            never    100.0%
+wire_request_decode      187->187 (+0)            never    100.0%
+------------------------------------------------------------------
+7 targets, 19,121,260,008 executions, 162 new edges
+
+Saturated -- gained no edges. More hours will not help. Either the
+seeds cannot reach further or there is nothing left to reach; check
+with `cargo fuzz coverage <target>` before re-seeding (D45):
+  bundle_decode: 626,613,151 executions, still at 815 edges
+  compact_state_decode: 4,294,967,296 executions, still at 301 edges
+  nonmembership_decode: 536,870,912 executions, still at 323 edges
+  utxo_proof_decode: 4,294,967,296 executions, still at 184 edges
+  wire_request_decode: 8,589,934,592 executions, still at 187 edges
+
+Suggested budget for the next run (10x time-to-last-discovery):
+  snapshot_decode          9.3 d
+  forest_decode            58,579,640 executions
+  bundle_decode            minutes -- re-seed instead
+  compact_state_decode     minutes -- re-seed instead
+  nonmembership_decode     minutes -- re-seed instead
+  utxo_proof_decode        minutes -- re-seed instead
+  wire_request_decode      minutes -- re-seed instead
+
+(run still going: pass --elapsed-hours to get these as times)
