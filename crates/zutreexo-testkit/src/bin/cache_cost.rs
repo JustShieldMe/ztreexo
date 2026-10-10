@@ -38,6 +38,29 @@
 //!
 //! The warm-up exists for the reason `spend_age` documents: a short chain
 //! cannot produce an old spend, so windows measured without one are flattered.
+//!
+//! # What the cache costs in memory, not just in leaves
+//!
+//! A leaf count understates the cache. To prove a remembered leaf the node
+//! needs the sibling hashes on its path to a root as well, and it must hold
+//! them, because the bridge is no longer sending them. That set has an exact
+//! form: **a single batched proof over every remembered leaf contains precisely
+//! the siblings a node must store**, no more (shared paths are deduplicated by
+//! construction) and no fewer (it is a valid proof). So the pollard a node needs
+//! is the remembered leaves plus that proof's hashes.
+//!
+//! That is the floor, and it is close to one hash per leaf for a reason worth
+//! knowing: Utreexo appends new leaves at the right edge of the forest, so the
+//! young leaves a cache remembers sit together in the newest subtrees, and a
+//! proof over a dense block needs only its boundary siblings. Measured at
+//! heights 20,000-30,000 it was 1.00-1.02x. The floor assumes internal nodes
+//! are recomputed for every proof; a pollard that caches them for O(log n)
+//! proving holds up to 2n-1 nodes for n leaves, so read the real cost as
+//! between 1x and 2x the leaf count.
+//!
+//! Building that proof over millions of leaves is expensive, so it is opt-in
+//! and sampled: `ZUTREEXO_POLLARD_EVERY=N` measures it every `N` blocks while
+//! measuring, and `0` (the default) skips it.
 
 #![allow(clippy::print_stdout, clippy::print_stderr)]
 
@@ -86,12 +109,17 @@ struct Window {
     occupancy_samples: u64,
     /// Blocks where the cache covered every spend, so no proof at all is sent.
     blocks_fully_covered: u64,
+    /// Peak pollard size while measuring: remembered leaves plus the sibling
+    /// hashes needed to prove them all. Zero when not sampled.
+    peak_pollard_nodes: u64,
 }
 
 fn main() {
     let rpc = std::env::var("ZUTREEXO_RPC").unwrap_or_else(|_| "127.0.0.1:8232".to_string());
     let end = env_u32("ZUTREEXO_END", 150_000);
     let warmup = env_u32("ZUTREEXO_WARMUP", 0);
+    // Pollard sampling interval in blocks; see the module comment.
+    let pollard_every = env_u32("ZUTREEXO_POLLARD_EVERY", 0);
     let depth =
         u8::try_from(env_u32("ZUTREEXO_DEPTH", u32::from(DEFAULT_DEPTH))).unwrap_or(DEFAULT_DEPTH);
 
@@ -243,6 +271,36 @@ fn main() {
                 }
             }
         }
+
+        // Pollard size: the remembered leaves plus every sibling needed to
+        // prove them, taken from one batched proof over all of them.
+        if counts && pollard_every > 0 && now % pollard_every == 0 {
+            for (win, w) in windows.iter_mut().zip(WINDOWS.iter()) {
+                let hashes: Vec<[u8; 32]> = born
+                    .iter()
+                    .filter(|(_, b)| now.saturating_sub(**b) <= *w)
+                    .filter_map(|(point, _)| state.utxo(point))
+                    .map(UtxoLeaf::hash)
+                    .collect();
+                if hashes.is_empty() {
+                    continue;
+                }
+                match state.utxos().prove(&hashes) {
+                    Ok(proof) => {
+                        let nodes = hashes.len() as u64 + proof.inner().hashes.len() as u64;
+                        win.peak_pollard_nodes = win.peak_pollard_nodes.max(nodes);
+                    }
+                    Err(error) => {
+                        eprintln!("height {now}: pollard proof failed: {error}");
+                        std::process::exit(1);
+                    }
+                }
+            }
+            eprintln!(
+                "[{:>7.1}s] pollard sampled at {now}",
+                began.elapsed().as_secs_f64()
+            );
+        }
     }
 
     let secs = began.elapsed().as_secs_f64();
@@ -294,4 +352,37 @@ fn main() {
     println!("'saved' is bytes off the wire. 'leaves mean' and 'leaves peak' are what a node");
     println!("in the measured era holds to get it; 'all-time pk' includes the replay from");
     println!("genesis and is shown only so the two can be compared, not to size a cache by.");
+
+    if pollard_every > 0 {
+        println!();
+        println!("--- what the cache costs in memory (sampled every {pollard_every} blocks) ---");
+        println!(
+            "{:<12} {:>12} {:>14} {:>9} {:>12}",
+            "window", "leaves peak", "pollard nodes", "per leaf", "~MiB @32B"
+        );
+        for (win, w) in windows.iter().zip(WINDOWS.iter()) {
+            if win.peak_pollard_nodes == 0 {
+                continue;
+            }
+            let per_leaf = if win.peak_leaves_window == 0 {
+                0.0
+            } else {
+                win.peak_pollard_nodes as f64 / win.peak_leaves_window as f64
+            };
+            println!(
+                "{:<12} {:>12} {:>14} {:>8.2}x {:>12}",
+                format!("{w} blocks"),
+                win.peak_leaves_window,
+                win.peak_pollard_nodes,
+                per_leaf,
+                win.peak_pollard_nodes.saturating_mul(32) / (1024 * 1024)
+            );
+        }
+        println!();
+        println!("'pollard nodes' is the floor: remembered leaves plus the siblings no leaf can");
+        println!("rebuild. It assumes internal nodes are recomputed for every proof. Young leaves");
+        println!("sit together at the forest's right edge, so this is close to 1x. A pollard that");
+        println!("caches internal nodes for O(log n) proving holds up to ~2x (2n-1 nodes for n");
+        println!("leaves). Hashes only, at 32 B: no allocator, map or pointer overhead.");
+    }
 }
