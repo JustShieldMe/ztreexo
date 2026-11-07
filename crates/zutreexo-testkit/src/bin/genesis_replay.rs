@@ -46,7 +46,7 @@ use zutreexo_accumulator::imt::DEFAULT_DEPTH;
 use zutreexo_accumulator::PoolId;
 use zutreexo_chain::{apply_block, load, save, summarize_block, ApplyOptions, ChainAccumulators};
 use zutreexo_testkit::measure::{peak_rss_mib, rss_mib};
-use zutreexo_testkit::source::{BlockSource, BlockStream, RpcSource};
+use zutreexo_testkit::source::{BlockSource, BlockStream, Retrying, RpcSource};
 
 fn env_u32(key: &str, fallback: u32) -> u32 {
     std::env::var(key)
@@ -197,7 +197,7 @@ fn main() -> std::process::ExitCode {
     }
 
     let address = std::env::var("ZUTREEXO_RPC").unwrap_or_else(|_| "127.0.0.1:8232".to_owned());
-    let source = RpcSource::new(&address);
+    let source = Retrying::patient(RpcSource::new(&address));
 
     let tip = match source.tip() {
         Ok(tip) => tip,

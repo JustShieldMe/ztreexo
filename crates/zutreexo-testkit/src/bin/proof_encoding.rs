@@ -58,7 +58,7 @@ use zutreexo_accumulator::proof::encode_utxo_proof;
 use zutreexo_accumulator::utreexo::ZcashNodeHash;
 use zutreexo_accumulator::CanonicalSerialize;
 use zutreexo_chain::{apply_and_prove, summarize_block, ApplyOptions, ChainAccumulators};
-use zutreexo_testkit::source::{BlockStream, RpcSource};
+use zutreexo_testkit::source::{BlockStream, Retrying, RpcSource};
 
 fn env_u32(key: &str, fallback: u32) -> u32 {
     std::env::var(key)
@@ -109,7 +109,7 @@ fn main() {
     let depth =
         u8::try_from(env_u32("ZUTREEXO_DEPTH", u32::from(DEFAULT_DEPTH))).unwrap_or(DEFAULT_DEPTH);
 
-    let source = RpcSource::new(&rpc);
+    let source = Retrying::patient(RpcSource::new(&rpc));
     let mut state = match ChainAccumulators::new(depth) {
         Ok(state) => state,
         Err(error) => {

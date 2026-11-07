@@ -547,6 +547,9 @@ sweep.
 
 ## D25 — The `rustreexo` D10 blocker is fixed, and the fix is pinned to a fork
 
+> **Superseded 2026-11-07 by [D47](#d47--the-fork-is-retired-rustreexo-070-carries-every-fix-it-did):**
+> upstream shipped this fix in 0.7.0, and the fork is retired.
+
 **Phase 4a.** Resolves the blocker recorded in D10, which had stood since
 Phase 1 and blocked the transparent half of the entire design.
 
@@ -1323,6 +1326,102 @@ and does nothing about the leak, because the wallet must still ask someone for
 a proof.
 
 ---
+
+## D47 — The fork is retired: `rustreexo` 0.7.0 carries every fix it did
+
+**Phase 6g, 2026-11-07.** Supersedes the pin in
+[D25](#d25--the-rustreexo-d10-blocker-is-fixed-and-the-fix-is-pinned-to-a-fork)
+and the fork half of [D33](#d33--memforestdeserialize-is-not-total-on-malformed-input).
+Both manifests now take `rustreexo = "0.7"` from crates.io, `deny.toml` allows
+no git sources, and nothing in the build depends on an account this project
+controls.
+
+### What 0.7.0 contains
+
+Published 2026-10-09. Every reason the fork existed is upstream, and the one
+alarm this project had raised on upstream behaviour is closed too:
+
+| defect | where we recorded it | upstream |
+|---|---|---|
+| invalid proofs for a deleted leaf's promoted sibling | D10, D25 | #166, which superseded our #152 (closed "merged as part of #166", 2026-10-07) |
+| `deserialize` panics on an unknown node-type byte | D33 | returns `InvalidData` |
+| `deserialize` recurses until the stack overflows | D33 | depth bounded at `MAX_FOREST_ROWS + 1` |
+| `serialize` panics when the writer fails | D33 | #160, ours, merged 2026-10-05 |
+| `MemForest::clone` aliases instead of snapshotting | D11, #151 | closed 2026-10-01 by **removing** `Clone` |
+
+Each row was confirmed in the 0.7.0 source, not inferred from a PR title.
+
+### The evidence it is a drop-in
+
+- **Roots are byte-identical.** The deterministic vectors in `testkit` pass
+  unchanged, so no snapshot, checkpoint or committed root moves.
+- Full workspace suite: **470 passed, 0 failed.**
+- CI's scheduled-only jobs, run locally because this swaps the accumulator's
+  core dependency: proptest at 10,000 cases; the differential harness at its
+  strictest (depth 14, cold rebuild every block); the crash harness (25 kills,
+  13 mid-write, no divergence); and **10⁶ randomised reorgs, zero
+  divergence**.
+- All five D33 crash artifacts replay clean through `forest_decode` and
+  `snapshot_decode` built against 0.7.0 — through upstream's own error paths,
+  since the fuzzer's panic hook aborts before our `catch_unwind` could act.
+
+Three API changes, all mechanical: `Stump::modify` returns the new stump alone
+(update data moved to `get_update_data`, upstream #81); `Pollard::modify` takes
+its proof by reference; and `MemForest` is no longer `Clone`.
+
+### One behavioural change mattered
+
+0.7.0's `Stump::modify` refuses a stump whose root count is not the popcount of
+its leaf counter. That falsified a test this project wrote to pin the opposite
+— *"a wrong leaf counter is never rejected"* — which was true of 0.6.0 and is
+not of 0.7.0. Re-measured with the same sweep (counts 0..=n+2, forests of 3..16
+leaves): **125 of 161 wrong counters are now rejected on the first insert**,
+25 are accepted and diverge at once, and **11 are accepted with identical
+roots**. The ones it misses are exactly those with the right popcount: the same
+roots, read as trees of different heights. Sixteen leaves seeded as eight stay
+identical for seven inserts and diverge on the eighth.
+
+So `UtxoRoots::from_parts` is still a trust boundary that has to be checked
+against independent bridges; 0.7.0 makes most mistakes loud, not all. The test
+is now `a_wrong_leaf_counter_is_caught_only_by_its_root_count`, and the
+`from_parts` and `CompactState::from_roots` documentation says so.
+
+### What did not change
+
+- **`Pollard` still cannot prove an unaffected leaf after a deletion.** The
+  alarm in `upstream_rustreexo.rs` stays green, so the bridge stays on
+  `MemForest` and D10's conclusion stands. #168 ("proof position handling and
+  cached proof updates") did not reach this case.
+- **`MemForest` is still `Rc`/`Weak` inside**, so it is still not `Send`, and
+  bridge concurrency is still the actor-shaped problem PLAN.md describes.
+- **The `catch_unwind` in `UtxoForest::from_bytes` stays.** D33 decided that
+  removing it is a separate decision from changing the dependency, and the
+  reasoning holds: it costs nothing under the fuzzer and is the only thing
+  between a future upstream regression and a remote crash.
+- **The D29 header guard stays.** Upstream bounding its own work does not make
+  our check on untrusted lengths redundant.
+
+### The guards, rewritten for a world without a pin
+
+`tests/upstream_rustreexo.rs` keeps its two kinds of test. The D10 regression
+tests now guard against a future *release* regressing rather than against
+losing a pin. The #151 alarm could not survive as written — a test that calls
+`clone()` does not compile against a type without it — so it became a
+compile-time one: two blanket impls make a trait path ambiguous exactly when
+`MemForest: Clone`, so the test **stops compiling if `Clone` comes back**, and
+whoever sees that checks whether the new impl is deep before `rollback.rs` goes
+near it. Confirmed to fire against a `Clone` type and not against `MemForest`.
+
+`tests/pins_agree.rs` used to compare two fork revs textually. The hazard it
+guarded — the fuzz crate is outside the workspace and so has its own lockfile —
+survives the fork, with a version number in place of a rev. It now compares
+what the two **lockfiles resolved**, version and source, and separately fails
+on any non-crates.io source, so a fork cannot return through a quiet
+`[patch]`.
+
+**Cost:** one new `cargo deny` duplicate warning, `bitcoin-internals`, because
+0.7.0 moved to `bitcoin_hashes` 1.x while the Zcash tree still pulls the older
+line. A warning, not a ban; it resolves when either side moves.
 
 ## D46 — 94% of a transparent proof is digests, so the encoding is not the lever; the cache is, and what it costs depends on the era
 

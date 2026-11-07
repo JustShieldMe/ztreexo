@@ -51,7 +51,7 @@ use zebra_chain::block::Block;
 use zebra_chain::serialization::ZcashDeserialize;
 
 use zutreexo_chain::{summarize_block, OutPoint};
-use zutreexo_testkit::source::{BlockStream, RpcSource};
+use zutreexo_testkit::source::{BlockStream, Retrying, RpcSource};
 
 fn env_u32(key: &str, fallback: u32) -> u32 {
     std::env::var(key)
@@ -68,7 +68,7 @@ fn main() {
     let end = env_u32("ZUTREEXO_END", 150_000);
     // Ages are only recorded above this height; see the module comment.
     let warmup = env_u32("ZUTREEXO_WARMUP", 0);
-    let source = RpcSource::new(&rpc);
+    let source = Retrying::patient(RpcSource::new(&rpc));
 
     // Creation height per outpoint. A HashMap is fine here and nowhere near a
     // root: nothing in this binary is hashed, ordered, or serialized, so
