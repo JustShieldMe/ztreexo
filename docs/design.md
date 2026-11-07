@@ -1391,7 +1391,9 @@ is now `a_wrong_leaf_counter_is_caught_only_by_its_root_count`, and the
 - **`Pollard` still cannot prove an unaffected leaf after a deletion.** The
   alarm in `upstream_rustreexo.rs` stays green, so the bridge stays on
   `MemForest` and D10's conclusion stands. #168 ("proof position handling and
-  cached proof updates") did not reach this case.
+  cached proof updates") did not reach this case. **Reported 2026-11-07 as
+  mit-dci/rustreexo#170**, with the cause and a patch: four defects, the first
+  of which hides the other three (D46).
 - **`MemForest` is still `Rc`/`Weak` inside**, so it is still not `Send`, and
   bridge concurrency is still the actor-shaped problem PLAN.md describes.
 - **The `catch_unwind` in `UtxoForest::from_bytes` stays.** D33 decided that
@@ -1541,7 +1543,8 @@ optimisation, and that the dial's exchange rate on this chain is roughly linear.
   remembers a leaf must keep enough of the forest to prove it, which is a
   pollard holding those leaves' paths, not 32 bytes each. The pollard's real
   size is unmeasured, and it is strictly larger than the leaf count suggests.
-  Any decision on the 10,000-block option needs that number first.
+  Any decision on the 10,000-block option needs that number first. **Bounded
+  2026-11-07, not measured exactly — see the last amendment.**
 
 ### Amended 2026-09-27 — the tip measurement landed, and it argues the other way
 
@@ -1569,11 +1572,12 @@ outputs older than 2,097,152 blocks**, coins moving after four years or more.
 Any single-number summary of this distribution is wrong, and a cache sized off
 the mean would be sized for the tail rather than the traffic.
 
-Since the 2017 measurement showed **bytes tracking coverage almost 1:1**, a
+~~Since the 2017 measurement showed **bytes tracking coverage almost 1:1**, a
 10,000-block window plausibly saves around 70% of transparent proof bytes at the
-tip, against the 26.7% recorded above. That is a different conclusion from the
-one this entry reached, and it comes from the same tool pointed at the right
-era.
+tip, against the 26.7% recorded above.~~ **It saves 54.9%: bytes stop tracking
+coverage at the tip — see the last amendment.** That is still a different
+conclusion from the one this entry reached, and it comes from the same tool
+pointed at the right era.
 
 **So the sentence "the cache trades away precisely the property the design is
 selling" stands only for 2017 traffic.** What it costs at the tip is not yet
@@ -1583,12 +1587,116 @@ window covering 73.3% of spends might hold a small fraction of that set or most
 of it, and the two answers point opposite ways. `cache_cost` over the tip era
 answers it, and needs the box the fuzz campaign is using until 2026-09-29.
 
+### Amended 2026-11-07 — at the tip the cache is nearly free, saves about half, and is blocked on `Pollard`
+
+`cache_cost` from genesis to 3,450,000, measuring from 3,300,000 and sampling
+the pollard every 25,000 blocks. It took 7 h 52 min with the box to itself, and
+none of the transport retries added after the October run died were needed.
+The 150,001 measured blocks hold **1,525,854 transparent spends in 105,553
+blocks**, and 324,265,147 bytes of transparent proof with no cache.
+
+```
+ZUTREEXO_RPC=127.0.0.1:8232 ZUTREEXO_END=3450000 ZUTREEXO_WARMUP=3300000 \
+  ZUTREEXO_POLLARD_EVERY=25000 \
+  cargo run --release -p zutreexo-testkit --bin cache_cost
+```
+
+| cache window | spends covered | proof bytes saved | leaves held, mean | leaves held, peak | spending blocks needing no proof |
+|---|---|---|---|---|---|
+| 100 blocks | 27.2% | 17.4% | 678 | 8,304 | 24.8% |
+| 1,000 blocks | 46.8% | 35.7% | 4,846 | 79,261 | 40.4% |
+| 10,000 blocks | 70.9% | **54.9%** | 29,071 | **102,785** | **71.1%** |
+| 50,000 blocks | 75.8% | 62.5% | 91,210 | 170,243 | 80.8% |
+| 100,000 blocks | 77.9% | 66.1% | 165,778 | 231,945 | 84.9% |
+
+Coverage runs about 2.5 points under `spend_age`'s at every window. The gap is
+the same-block spends: they are cancelled and never enter the forest
+(`block_apply.rs`), so they need no proof with or without a cache, and
+`cache_cost` counts them in the denominator but not as covered.
+
+**Against the set, the 2017 conclusion reverses.** The live UTXO set at
+3,450,000 is 27,538,297 leaves. The 10,000-block window's peak is 102,785 of
+them, **0.37%**, where in 2017 it was 18%. Even the 100,000-block window peaks
+at 0.84%. Modern outputs are spent young *and* few are created per block, so a
+window that covers most spends holds almost nothing. 2017 needed 2.6M leaves to
+save 26.7%. The tip needs a twenty-fifth as many to save twice as much.
+
+**In memory**, at 32 bytes a hash and between one and two hashes per leaf (the
+module comment in `cache_cost.rs` derives both bounds), the 10,000-block
+window's peak is **3.1–6.3 MiB**, and the 100,000-block window's is 7.1–14.2
+MiB. A compact node holding 693 bytes would hold a few MiB. Against Zebra's
+31.7 GiB that is still a reduction of about 5,000×.
+
+**The tool's `per leaf` column is wrong and should not be quoted.** It divides
+the pollard's peak over seven samples (one every 25,000 blocks) by the leaf
+peak over every block: two maxima taken at different heights. A pollard always
+holds at least its own leaves, so the 0.10× on the 100- and 1,000-block rows is
+an artefact of sampling, not a property of the structure. The `pollard nodes`
+figures are real pollard sizes at those seven heights. For the 10,000-block
+window that is 65,845 hashes, 2.0 MiB. But the per-leaf ratio at the tip is
+unmeasured, so the 3.1–6.3 MiB range rests on the bounds rather than on a
+sample. Recording the leaf count at each sample height would fix the column.
+
+**Bytes no longer track coverage.** In 2017 they did, almost 1:1, and the
+2026-09-27 amendment extrapolated that to "around 70%" at the tip. The measured
+figure is 54.9%: the 10,000-block window removes 70.9% of the spends but only
+54.9% of the bytes, and the gap widens as coverage grows (from 27.2 against
+17.4 to 77.9 against 66.1). The likely reason is where the leaves sit. Utreexo
+appends at the forest's right edge, so young leaves live in the newest and
+smallest trees and their proofs are short. The dormant tail a cache cannot
+reach sits in the oldest and tallest trees, and its proofs are the longest. So a
+cache removes the cheap targets first. That reading fits the numbers but was not
+measured separately.
+
+**The returns fall off past 10,000 blocks.** Going from 1,000 to 10,000 blocks
+buys 19.2 points of bytes for 23,524 more peak leaves. Going from 10,000 to
+100,000 buys 11.2 points for 129,160 more. What no window reaches is the tail:
+about a fifth of spends are of outputs older than 100,000 blocks.
+
+**And a correction to the 2017 framing above.** "Putting two thirds of the UTXO
+set back on disk" overstated even the 2017 cost. A cache holds 32-byte leaf
+hashes and their siblings, not UTXO entries. So 9.4M leaves is roughly 290–575
+MiB, not a large fraction of 31.7 GiB. The leaf-count comparison was correct;
+the phrase implied the storage of the set, and it was quoted as such in
+`benchmarks.md`.
+
+**What building it needs.**
+
+- **The rule can be stateless.** Both sides know every leaf's creation height,
+  so a CSN can name its window in the request and the bridge can omit the young
+  targets without remembering anything per client. It is a wire-format
+  addition (a `WIRE_VERSION` bump) and consensus-neutral.
+- **The CSN needs a partial forest that can prove the leaves it remembers after
+  other leaves are deleted.** That is what `rustreexo`'s `Pollard` is for. It is
+  also the defect `tests/upstream_rustreexo.rs` still pins in 0.7.0 (D10, D47):
+  **`Pollard` cannot prove an unaffected leaf after a deletion.** A cache built
+  on it would fail at the first block that spends anything it does not
+  remember. So the cache is blocked upstream, for the same reason the bridge
+  holds a `MemForest`. The options are the ones D10 had: fix `Pollard`
+  upstream, or keep the cache in a structure this project owns. CLAUDE.md §3's
+  dependency policy points at the first, and it was taken the same day:
+  **mit-dci/rustreexo#170** gives the cause, four defects in
+  `src/pollard/mod.rs`. The first, `ingest_positions` replacing the root on a
+  deletion proof's path, drops the whole tree and hides the other three. The
+  issue also carries a patch: across 2,000 random forests × 20 blocks it takes
+  single-leaf proof failures from 70.9% to zero, with 100%, 50% and 10% of
+  leaves remembered, and rustreexo's own 117 tests still pass.
+- **The window is wall-clock behaviour, sized here in 75-second blocks.** The
+  interval was still 75 s at height 3,543,404. If a block-time change lands
+  (CLAUDE.md §7), a window fixed in blocks shrinks in time by the same factor,
+  so it should be sized in time or re-measured.
+
 ### Consequence for the phase
 
 The next phase is not the encoder — that is settled at 2.3% of a bundle and
-should not be re-proposed. Whether it is a cache depends on two numbers that are
-now one: `cache_cost` at the tip, giving bytes saved *and* leaves held, plus the
-pollard size behind "leaves held", which remains a floor rather than the memory.
+should not be re-proposed. ~~Whether it is a cache depends on two numbers that
+are now one: `cache_cost` at the tip, giving bytes saved *and* leaves held,
+plus the pollard size behind "leaves held", which remains a floor rather than
+the memory.~~ **It is the cache.** At the tip a 10,000-block window, about 8.7
+days, removes 54.9% of transparent proof bytes. It lets 71% of spending blocks
+validate with no transparent proof at all, and it costs a few MiB. That is the
+largest saving this project has measured for the smallest cost. The first piece
+of work is not the cache itself but a `Pollard` that can prove after deletions.
 Both tools are committed so the question can be re-asked cheaply against any
 height range, which is the reason the 2017 answer could be corrected at all.
 

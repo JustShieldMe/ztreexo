@@ -612,6 +612,14 @@ Utreexo proofs is where the work belongs**, and that is a question about
 > The lever is a node needing *fewer* digests, which means caching leaves it can
 > prove itself. D46 prices that too, and it is a trade rather than a win: 64.9%
 > of the proof bytes costs holding 65% of the UTXO set.
+>
+> **Corrected 2026-11-07 — that is 2017 traffic, and the tip says the opposite.**
+> Over heights 3,300,000–3,450,000 a 10,000-block cache removes **54.9%** of
+> transparent proof bytes for a peak of **102,785 leaves, 0.37%** of a
+> 27,538,297-leaf set, about 3–6 MiB of hashes. "Holding 65% of the UTXO set"
+> also overstated the 2017 cost: a cache holds 32-byte leaf hashes, not UTXO
+> entries. Full table and the `Pollard` defect that blocks building it in
+> [D46](design.md).
 
 Both are wire-format changes and belong with the Phase 4b transport, before the
 format has clients. Neither has been implemented or measured at the new size;

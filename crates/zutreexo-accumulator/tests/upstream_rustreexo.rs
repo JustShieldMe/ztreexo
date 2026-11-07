@@ -14,7 +14,8 @@
 //!
 //! **Alarms for upstream behaviour we work around.** These fail when upstream
 //! changes, which is the signal to revisit whatever depends on it: `Pollard`
-//! still cannot prove unaffected leaves after a deletion, and `MemForest` has
+//! still cannot prove unaffected leaves after a deletion
+//! (mit-dci/rustreexo#170), and `MemForest` has
 //! no `Clone` (mit-dci/rustreexo#151, resolved by removing the aliasing derive).
 //!
 //! Everything here uses stock `rustreexo` types — `BitcoinNodeHash`, not our
@@ -115,9 +116,12 @@ fn memforest_proves_the_sibling_of_a_deleted_leaf() {
 /// | unaffected leaves (2..7) | broken | **still broken** |
 ///
 /// The promoted sibling was a `calculate_hashes` fault and is gone. The
-/// unaffected-leaf failure is a separate defect in `Pollard`'s node-upgrade
-/// path, it happens at proof *generation*, and neither PR #152 nor anything
-/// else in 0.7.0 touches it.
+/// unaffected-leaf failure is a separate defect, and neither PR #152 nor
+/// anything else in 0.7.0 touches it. Reported as mit-dci/rustreexo#170:
+/// `ingest_positions` replaces the root on the deletion proof's path with a
+/// fresh node, dropping the tree beneath it, so only the proof's own path (the
+/// promoted sibling's) survives. Three more defects sit behind that one; the
+/// issue carries a patch for all four.
 ///
 /// So CLAUDE.md's bridge node must use `MemForest`, and D10's conclusion —
 /// switching structures is not the fix — survives the fix that prompted
@@ -162,8 +166,9 @@ fn pollard_still_cannot_prove_unaffected_leaves_after_a_deletion() {
         assert!(
             pollard.batch_proof(&[*target]).is_err(),
             "UPSTREAM FIXED: Pollard can prove unaffected leaf {index} after a \
-             deletion. Re-evaluate whether the bridge should hold a Pollard \
-             rather than a MemForest — see docs/design.md D10."
+             deletion (mit-dci/rustreexo#170). Re-evaluate whether the bridge \
+             should hold a Pollard rather than a MemForest, and unblock the \
+             compact-node leaf cache — see docs/design.md D10 and D46."
         );
     }
 }
