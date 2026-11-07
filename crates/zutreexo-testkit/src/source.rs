@@ -234,6 +234,110 @@ impl BlockSource for RpcSource {
     }
 }
 
+/// Retries transport failures, so a multi-hour replay survives a node restart.
+///
+/// # Why this exists
+///
+/// The tip-era `cache_cost` run died 291,072 blocks in, on one
+/// `Connection reset by peer`, when `zebrad` restarted underneath it — and
+/// because the tool exited on the first fetch error, it took the hour of
+/// replay with it and nobody noticed for a month. A restart is the normal
+/// case for a node that runs for weeks, not an exception, and a measurement
+/// tool that cannot ride one out cannot be left unattended.
+///
+/// # What is retried
+///
+/// Only [`SourceError::Transport`]: the connection was refused, reset, or cut
+/// off mid-response, so the node never gave an answer. Everything else is an
+/// answer — `Response`, `Parse`, `Missing` — and asking again would get the
+/// same one, so those pass through on the first attempt and stay loud.
+///
+/// Every request is a read, so a retry cannot double-apply anything, and
+/// [`BlockStream`] restores height order after fetching, so a block that
+/// needed three attempts still lands in sequence.
+///
+/// Each retry is logged to stderr with its height and attempt number. When
+/// the budget runs out the last error is returned unchanged, and the tool
+/// fails exactly as it did before — just later, and only for a node that
+/// stayed down.
+#[derive(Clone, Debug)]
+pub struct Retrying<S> {
+    inner: S,
+    attempts: u32,
+    first_delay: std::time::Duration,
+    max_delay: std::time::Duration,
+}
+
+impl<S: BlockSource> Retrying<S> {
+    /// Wraps `inner` with an explicit budget: `attempts` tries in total,
+    /// waiting `first_delay` after the first failure and doubling up to
+    /// `max_delay`.
+    pub fn new(
+        inner: S,
+        attempts: u32,
+        first_delay: std::time::Duration,
+        max_delay: std::time::Duration,
+    ) -> Self {
+        Retrying {
+            inner,
+            attempts: attempts.max(1),
+            first_delay,
+            max_delay,
+        }
+    }
+
+    /// The budget the measurement tools use: 40 attempts, 1 s doubling to a
+    /// 60 s ceiling — about half an hour in all, which covers a `zebrad`
+    /// restart with time to spare and still gives up on a node that is gone.
+    pub fn patient(inner: S) -> Self {
+        Retrying::new(
+            inner,
+            40,
+            std::time::Duration::from_secs(1),
+            std::time::Duration::from_secs(60),
+        )
+    }
+
+    /// The wrapped source.
+    pub fn inner(&self) -> &S {
+        &self.inner
+    }
+
+    fn with_retry<T>(
+        &self,
+        what: &str,
+        mut call: impl FnMut() -> Result<T, SourceError>,
+    ) -> Result<T, SourceError> {
+        let mut delay = self.first_delay;
+        let mut attempt = 1;
+        loop {
+            match call() {
+                Err(SourceError::Transport(reason)) if attempt < self.attempts => {
+                    eprintln!(
+                        "{what}: {reason} — retry {attempt}/{} in {:?}",
+                        self.attempts.saturating_sub(1),
+                        delay
+                    );
+                    std::thread::sleep(delay);
+                    delay = delay.saturating_mul(2).min(self.max_delay);
+                    attempt += 1;
+                }
+                other => return other,
+            }
+        }
+    }
+}
+
+impl<S: BlockSource> BlockSource for Retrying<S> {
+    fn raw_block(&self, height: u32) -> Result<Vec<u8>, SourceError> {
+        self.with_retry(&format!("block {height}"), || self.inner.raw_block(height))
+    }
+
+    fn tip(&self) -> Result<u32, SourceError> {
+        self.with_retry("tip", || self.inner.tip())
+    }
+}
+
 /// Blocks read from a committed `.jsonl` fixture slice.
 ///
 /// Kept so a replay can run with no node at all, and so the fixture path and
@@ -652,5 +756,126 @@ mod tests {
     #[test]
     fn rpc_source_default_points_at_the_conventional_local_port() {
         assert_eq!(RpcSource::default().address, "127.0.0.1:8232");
+    }
+
+    // ---------- Retrying ----------
+
+    /// Fails the first `failures` calls with `error`, then serves a block.
+    struct Flaky {
+        failures: u32,
+        error: SourceError,
+        calls: std::sync::atomic::AtomicU32,
+    }
+
+    impl Flaky {
+        fn new(failures: u32, error: SourceError) -> Self {
+            Flaky {
+                failures,
+                error,
+                calls: std::sync::atomic::AtomicU32::new(0),
+            }
+        }
+
+        fn calls(&self) -> u32 {
+            self.calls.load(std::sync::atomic::Ordering::SeqCst)
+        }
+    }
+
+    impl BlockSource for Flaky {
+        fn raw_block(&self, height: u32) -> Result<Vec<u8>, SourceError> {
+            let call = self.calls.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+            if call < self.failures {
+                Err(self.error.clone())
+            } else {
+                Ok(height.to_le_bytes().to_vec())
+            }
+        }
+
+        fn tip(&self) -> Result<u32, SourceError> {
+            self.raw_block(0).map(|_| 100)
+        }
+    }
+
+    fn quick(inner: Flaky, attempts: u32) -> Retrying<Flaky> {
+        Retrying::new(
+            inner,
+            attempts,
+            std::time::Duration::ZERO,
+            std::time::Duration::ZERO,
+        )
+    }
+
+    fn reset() -> SourceError {
+        SourceError::Transport("read: Connection reset by peer".to_owned())
+    }
+
+    #[test]
+    fn a_transport_failure_is_retried_until_the_node_answers() {
+        // The failure that killed the tip cache_cost run.
+        let source = quick(Flaky::new(3, reset()), 10);
+        assert_eq!(source.raw_block(7).unwrap(), 7u32.to_le_bytes().to_vec());
+        assert_eq!(source.inner().calls(), 4);
+        assert_eq!(source.tip().unwrap(), 100);
+    }
+
+    #[test]
+    fn the_last_transport_error_is_returned_when_the_budget_runs_out() {
+        let source = quick(Flaky::new(u32::MAX, reset()), 5);
+        assert_eq!(source.raw_block(7), Err(reset()));
+        assert_eq!(source.inner().calls(), 5);
+    }
+
+    #[test]
+    fn an_answer_from_the_node_is_never_retried() {
+        // Response, Parse and Missing are answers; asking again gets the same
+        // one, and retrying would only hide them for half an hour.
+        for error in [
+            SourceError::Response {
+                height: 7,
+                reason: "no such block".to_owned(),
+            },
+            SourceError::Parse {
+                height: 7,
+                reason: "bad hex".to_owned(),
+            },
+            SourceError::Missing { height: 7 },
+        ] {
+            let source = quick(Flaky::new(1, error.clone()), 10);
+            assert_eq!(source.raw_block(7), Err(error));
+            assert_eq!(source.inner().calls(), 1);
+        }
+    }
+
+    #[test]
+    fn a_zero_attempt_budget_still_makes_one_call() {
+        let source = quick(Flaky::new(0, reset()), 0);
+        assert!(source.raw_block(1).is_ok());
+        assert_eq!(source.inner().calls(), 1);
+    }
+
+    #[test]
+    fn the_backoff_doubles_and_stops_at_its_ceiling() {
+        let source = Retrying::new(
+            Flaky::new(4, reset()),
+            10,
+            std::time::Duration::from_millis(1),
+            std::time::Duration::from_millis(3),
+        );
+        let started = std::time::Instant::now();
+        assert!(source.raw_block(1).is_ok());
+        // 1 + 2 + 3 + 3 ms: the third and fourth waits are capped.
+        assert!(started.elapsed() >= std::time::Duration::from_millis(9));
+    }
+
+    #[test]
+    fn a_stream_over_a_flaky_source_still_yields_in_order() {
+        let source = quick(Flaky::new(5, reset()), 10);
+        let heights: Vec<u32> = BlockStream::new(&source, 10, 19, 4, 3)
+            .map(|(h, fetched)| {
+                assert_eq!(fetched.unwrap(), h.to_le_bytes().to_vec());
+                h
+            })
+            .collect();
+        assert_eq!(heights, (10..=19).collect::<Vec<_>>());
     }
 }

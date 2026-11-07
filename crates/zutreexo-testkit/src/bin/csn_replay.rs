@@ -43,7 +43,7 @@ use zutreexo_chain::{
 };
 use zutreexo_csn::CompactState;
 use zutreexo_testkit::measure::{peak_rss_mib, rss_mib, Latencies};
-use zutreexo_testkit::source::{BlockStream, RpcSource};
+use zutreexo_testkit::source::{BlockStream, Retrying, RpcSource};
 
 fn env_u32(key: &str, fallback: u32) -> u32 {
     std::env::var(key)
@@ -116,7 +116,7 @@ fn main() {
 
     println!("csn_replay: heights {start}..={end} against {address}, depth {depth}");
 
-    let source = RpcSource::new(&address);
+    let source = Retrying::patient(RpcSource::new(&address));
     let mut totals = Totals::default();
 
     // Resume the bridge from a snapshot, and seed the compact node from the

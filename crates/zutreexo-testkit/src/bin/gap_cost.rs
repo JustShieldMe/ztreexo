@@ -58,7 +58,7 @@ use zebra_chain::serialization::ZcashDeserialize;
 
 use zutreexo_accumulator::imt::{IndexedMerkleTree, Value, DEFAULT_DEPTH};
 use zutreexo_accumulator::{CanonicalSerialize, PoolId};
-use zutreexo_testkit::source::{BlockSource, BlockStream, RpcSource};
+use zutreexo_testkit::source::{BlockSource, BlockStream, Retrying, RpcSource};
 
 /// Bytes a compact block spends per shielded output, by pool.
 ///
@@ -95,7 +95,7 @@ fn main() {
     let depth =
         u8::try_from(env_u32("ZUTREEXO_DEPTH", u32::from(DEFAULT_DEPTH))).unwrap_or(DEFAULT_DEPTH);
 
-    let source = RpcSource::new(&address);
+    let source = Retrying::patient(RpcSource::new(&address));
     let tip = match source.tip() {
         Ok(height) => height,
         Err(error) => {
@@ -126,7 +126,7 @@ fn main() {
 }
 
 /// Walks the range and records what each block would cost a scanning wallet.
-fn sample(source: &RpcSource, start: u32, end: u32) -> Sampled {
+fn sample(source: &Retrying<RpcSource>, start: u32, end: u32) -> Sampled {
     let began = Instant::now();
     let mut out = Sampled {
         nullifier_bytes: Vec::new(),
