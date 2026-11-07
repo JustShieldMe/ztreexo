@@ -1391,7 +1391,9 @@ is now `a_wrong_leaf_counter_is_caught_only_by_its_root_count`, and the
 - **`Pollard` still cannot prove an unaffected leaf after a deletion.** The
   alarm in `upstream_rustreexo.rs` stays green, so the bridge stays on
   `MemForest` and D10's conclusion stands. #168 ("proof position handling and
-  cached proof updates") did not reach this case.
+  cached proof updates") did not reach this case. **Reported 2026-11-07 as
+  mit-dci/rustreexo#170**, with the cause and a patch: four defects, the first
+  of which hides the other three (D46).
 - **`MemForest` is still `Rc`/`Weak` inside**, so it is still not `Send`, and
   bridge concurrency is still the actor-shaped problem PLAN.md describes.
 - **The `catch_unwind` in `UtxoForest::from_bytes` stays.** D33 decided that
@@ -1672,7 +1674,13 @@ the phrase implied the storage of the set, and it was quoted as such in
   remember. So the cache is blocked upstream, for the same reason the bridge
   holds a `MemForest`. The options are the ones D10 had: fix `Pollard`
   upstream, or keep the cache in a structure this project owns. CLAUDE.md §3's
-  dependency policy points at the first.
+  dependency policy points at the first, and it was taken the same day:
+  **mit-dci/rustreexo#170** gives the cause, four defects in
+  `src/pollard/mod.rs`. The first, `ingest_positions` replacing the root on a
+  deletion proof's path, drops the whole tree and hides the other three. The
+  issue also carries a patch: across 2,000 random forests × 20 blocks it takes
+  single-leaf proof failures from 70.9% to zero, with 100%, 50% and 10% of
+  leaves remembered, and rustreexo's own 117 tests still pass.
 - **The window is wall-clock behaviour, sized here in 75-second blocks.** The
   interval was still 75 s at height 3,543,404. If a block-time change lands
   (CLAUDE.md §7), a window fixed in blocks shrinks in time by the same factor,

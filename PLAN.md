@@ -197,8 +197,9 @@ crates.io 0.7.0 carries the D10 fix, both D33 fixes and #160, and resolved
 mit-dci/rustreexo#151 by removing `Clone`. `tests/upstream_rustreexo.rs` asserts
 the fixed behaviour against future releases, and `tests/pins_agree.rs` fails if
 the two lockfiles drift or a git source returns. What remains worked around:
-`Pollard` still cannot prove unaffected leaves after a deletion, so the bridge
-holds a `MemForest`, which is still not `Send`.
+`Pollard` still cannot prove unaffected leaves after a deletion
+(mit-dci/rustreexo#170, reported with a patch), so the bridge holds a
+`MemForest`, which is still not `Send`.
 
 **Every check inside `decode` is reachable only through a forged file.** `load`
 verifies magic and checksum before calling `decode`, so the checksum masks every
