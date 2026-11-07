@@ -318,17 +318,17 @@ impl UtxoRoots {
     /// `leaves` is the total ever inserted, **not** the unspent count. Utreexo
     /// assigns positions from that counter and never decrements it.
     ///
-    /// # A wrong counter is accepted silently
+    /// # A wrong counter is not always caught
     ///
     /// An earlier version of this comment claimed a wrong counter "would place
     /// every subsequent leaf at the wrong position and fail on the first proof
-    /// rather than silently". That was wrong twice over, and
-    /// `a_wrong_leaf_counter_is_silent_and_sometimes_delayed` pins what actually
-    /// happens: [`UtxoRoots::insert`] never rejects a bad counter — Utreexo has
-    /// no way to notice, since the count is an input rather than a claim it can
-    /// check — and divergence, while common, is not universal on the next
-    /// block. Sixteen leaves seeded as twelve produce *identical* roots after
-    /// one insert and diverge only later.
+    /// rather than silently". `a_wrong_leaf_counter_is_caught_only_by_its_root_count`
+    /// pins what actually happens. Since `rustreexo` 0.7.0,
+    /// [`UtxoRoots::insert`] rejects a counter whose popcount disagrees with
+    /// the number of roots — 125 of 161 wrong counters in a sweep. A counter
+    /// with the right popcount is invisible to that check, and divergence is
+    /// not guaranteed on the next block: sixteen leaves seeded as eight produce
+    /// *identical* roots for seven inserts and diverge on the eighth.
     ///
     /// So this is a genuine trust boundary and not a self-checking one. The
     /// mitigation is comparing the seed against independent bridges, which is
@@ -399,7 +399,7 @@ impl UtxoRoots {
         let adds: Vec<ZcashNodeHash> = additions.iter().copied().map(ZcashNodeHash::new).collect();
         let dels: Vec<ZcashNodeHash> = deletions.iter().copied().map(ZcashNodeHash::new).collect();
 
-        let (next, _update) = self
+        let next = self
             .stump
             .modify(&adds, &dels, proof.inner())
             .map_err(|e| UtreexoError::Backend(e.to_string()))?;
@@ -505,11 +505,12 @@ impl UtxoForest {
     /// # Why this exists rather than `Clone`
     ///
     /// This is the only way to take an independent copy of the forest.
-    /// `MemForest` derives `Clone`, but it holds `Rc<Node>` and `Node` stores
-    /// its hash in a `Cell`, so the derived clone shares nodes — mutating
-    /// either handle is visible through the other. It compiles, it reads like a
-    /// snapshot, and it silently is not one. That behaviour is pinned in
-    /// `tests/upstream_rustreexo.rs` and reported upstream.
+    /// `MemForest` holds `Rc<Node>` and `Node` stores its hash in a `Cell`, so
+    /// through 0.6.0 its derived `Clone` shared nodes — mutating either handle
+    /// was visible through the other. It compiled, it read like a snapshot, and
+    /// it silently was not one (mit-dci/rustreexo#151). 0.7.0 removed the
+    /// derive rather than deepening it, and `tests/upstream_rustreexo.rs`
+    /// fails to compile if it comes back.
     ///
     /// Costs roughly 79 bytes per leaf, so a caller snapshotting for rollback
     /// should do it at an interval rather than every block.
@@ -525,12 +526,12 @@ impl UtxoForest {
     ///
     /// # Upstream panics are contained here
     ///
-    /// `MemForest::deserialize` **panics** on a malformed node-type field —
-    /// `panic!("Invalid node type")`, `mem_forest/mod.rs:144` — rather than
-    /// returning the `io::Result` its signature promises. Twenty-five bytes are
-    /// enough; Phase 6's fuzzer found it in under three thousand executions and
-    /// reached the same panic through the snapshot loader, which is the path
-    /// that matters: a corrupt snapshot file would take the process down.
+    /// Through 0.6.0, `MemForest::deserialize` **panicked** on a malformed
+    /// node-type field — `panic!("Invalid node type")` — rather than returning
+    /// the `io::Result` its signature promises. Twenty-five bytes were enough;
+    /// Phase 6's fuzzer found it in under three thousand executions and reached
+    /// the same panic through the snapshot loader, which is the path that
+    /// matters: a corrupt snapshot file would take the process down.
     ///
     /// CLAUDE.md §5 rule 3 forbids a panic in these paths, and the rule binds
     /// this wrapper whether or not the panicking line is ours. So the call is
@@ -541,12 +542,17 @@ impl UtxoForest {
     /// `AssertUnwindSafe` is sound here because everything the closure touches
     /// is dropped on the panicking path; nothing half-built escapes.
     ///
-    /// **This is containment, not a fix.** The real repair belongs in the fork
-    /// (`docs/design.md` D25) and upstream after that; `docs/design.md` D33
-    /// records the reasoning and the patch. Remove this wrapper when the pinned
-    /// revision returns an error instead — `a_bad_node_type_is_an_error_not_a_panic`
-    /// keeps passing either way, which is the point of writing it against the
-    /// public behaviour rather than against the panic.
+    /// **The bug is fixed underneath it.** `rustreexo` 0.7.0 returns
+    /// `InvalidData` for an unknown node type and bounds recursion at the
+    /// forest's 64 rows (D33, D47), so this wrapper no longer fires on any
+    /// known input. It stays as containment for a future regression, by the
+    /// decision D33 recorded: it is cheap, `libfuzzer-sys` aborts in its panic
+    /// hook before unwinding so it hides nothing from the fuzzer, and removing
+    /// it is a separate decision from changing the dependency. It never
+    /// covered the recursion anyway — a stack overflow aborts rather than
+    /// unwinds. `a_bad_node_type_is_an_error_not_a_panic` passes with or
+    /// without it, which is the point of writing it against the public
+    /// behaviour rather than against the panic.
     pub fn from_bytes(bytes: &[u8]) -> Result<UtxoForest, UtreexoError> {
         let parsed = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             MemForest::deserialize(bytes)
@@ -813,83 +819,97 @@ mod tests {
         );
     }
 
-    /// **A wrong leaf counter is accepted silently, and may not diverge at once.**
+    /// **A wrong leaf counter is rejected only when the root count gives it
+    /// away, and otherwise may not diverge for several blocks.**
     ///
     /// Measured, because the first version of `from_parts`'s documentation
-    /// claimed the opposite — that seeding with the unspent count "would place
-    /// every subsequent leaf at the wrong position and fail on the first proof
-    /// rather than silently". Both halves were false, and a sweep over counts
-    /// 0..=n+2 for forests of 3..16 leaves said so:
+    /// claimed a wrong counter would "fail on the first proof rather than
+    /// silently". On `rustreexo` 0.6.0 that was false outright: a sweep over
+    /// counts 0..=n+2 for forests of 3..16 leaves never saw `insert` return an
+    /// error.
     ///
-    /// * `insert` **never** returned an error for a wrong counter. Not once.
-    ///   Utreexo has no way to notice; the count is an input, not a claim it
-    ///   can check.
-    /// * Divergence is common but **not universal on the next block**. With 16
-    ///   leaves, seeding 12 instead of 16 produces *identical* roots after one
-    ///   insert, because both counts have a clear low bit and the leaf is
-    ///   simply appended in each case. It surfaces later.
+    /// 0.7.0 changed half of that (D47). `Stump::modify` now refuses a stump
+    /// whose root count is not the popcount of its leaf counter, because a
+    /// forest of `n` leaves has exactly one perfect tree per set bit of `n`.
+    /// The same sweep on 0.7.0:
     ///
-    /// This is the same mistake as `docs/design.md` D29 — a comment asserting a
-    /// protection the code does not provide — and it is why the seed is a trust
-    /// boundary to be checked against independent bridges rather than something
-    /// a compact node can validate on its own.
+    /// | wrong counter, first insert | of 161 |
+    /// |---|---|
+    /// | rejected | 125 |
+    /// | accepted, roots diverge | 25 |
+    /// | accepted, roots **identical** | 11 |
+    ///
+    /// The 36 it accepts are the counters with the right popcount, and the
+    /// check cannot see those: the roots are the same set, read as trees of
+    /// different heights. Sixteen leaves seeded as eight is the clean case —
+    /// one root either way, identical roots for seven inserts, divergence on
+    /// the eighth, when the new subtree grows to the height the wrong counter
+    /// assigned the old root.
+    ///
+    /// So the seed is still a trust boundary to be checked against
+    /// independent bridges, not something a compact node can validate on its
+    /// own. 0.7.0 makes most mistakes loud; it does not make all of them so.
     #[test]
-    fn a_wrong_leaf_counter_is_silent_and_sometimes_delayed() {
+    fn a_wrong_leaf_counter_is_caught_only_by_its_root_count() {
         let build = |count: u8| {
             let leaves: Vec<Hash> = (1..=count).map(|n| leaf(n).hash()).collect();
             let mut forest = UtxoForest::new();
             forest.insert(&leaves).unwrap();
             forest
         };
-        let extra = [leaf(200).hash()];
 
-        // Case 1: silent divergence. 8 leaves seeded as 7.
+        // Case 1: the popcount gives it away. 8 leaves (one root) seeded as 7
+        // (which would need three).
         let forest = build(8);
-        let mut right = UtxoRoots::from_parts(&forest.roots(), forest.leaves());
         let mut wrong = UtxoRoots::from_parts(&forest.roots(), 7);
-        right.insert(&extra).unwrap();
-        wrong
-            .insert(&extra)
-            .expect("a wrong counter is not rejected — that is the point");
-        assert_ne!(
-            right.roots(),
-            wrong.roots(),
-            "8-seeded-as-7 should diverge on the next insert"
+        assert!(
+            wrong.insert(&[leaf(200).hash()]).is_err(),
+            "8-seeded-as-7 has the wrong root count for its counter and should \
+             be rejected on the first insert (rustreexo >= 0.7.0)"
         );
 
-        // Case 2: the delayed one, which is why "it fails fast" was wrong.
-        // 16 leaves seeded as 12 gives identical roots after one insert.
+        // Case 2: the popcount agrees, so nothing is rejected, and the roots
+        // stay identical until the eighth insert. 16 leaves seeded as 8.
         let forest = build(16);
         let mut right = UtxoRoots::from_parts(&forest.roots(), forest.leaves());
-        let mut wrong = UtxoRoots::from_parts(&forest.roots(), 12);
+        let mut wrong = UtxoRoots::from_parts(&forest.roots(), 8);
+        for n in 1..=7u8 {
+            let extra = [leaf(200 + n).hash()];
+            right.insert(&extra).unwrap();
+            wrong
+                .insert(&extra)
+                .expect("a counter with the right popcount is not rejected");
+            assert_eq!(
+                right.roots(),
+                wrong.roots(),
+                "16-seeded-as-8 diverged after {n} inserts, not 8; if it now \
+                 diverges sooner, the from_parts documentation should be revisited"
+            );
+        }
+        let extra = [leaf(208).hash()];
         right.insert(&extra).unwrap();
         wrong.insert(&extra).unwrap();
-        assert_eq!(
+        assert_ne!(
             right.roots(),
             wrong.roots(),
-            "if this now diverges immediately, the delayed case is gone and the \
-             from_parts documentation should be revisited"
-        );
-        assert_ne!(
-            right.leaves(),
-            wrong.leaves(),
-            "the counters must still differ, or the case is not what it claims"
+            "16-seeded-as-8 should diverge on the eighth insert"
         );
     }
 
     /// The 25 bytes Phase 6's fuzzer used to abort the process.
     ///
-    /// `MemForest::deserialize` panics with "Invalid node type" on an
-    /// unrecognised node-type field rather than returning the `io::Result` its
-    /// signature promises. libFuzzer found it in under 3,000 executions, and
+    /// `MemForest::deserialize` through 0.6.0 panicked with "Invalid node type"
+    /// on an unrecognised node-type field rather than returning the
+    /// `io::Result` its signature promises. libFuzzer found it in under 3,000 executions, and
     /// reached the identical panic through `store::load_bytes`, which is the
     /// path that matters: a corrupt snapshot file would take a node down.
     ///
     /// Deliberately written against the **public behaviour** — "this returns an
-    /// error" — and not against the panic. When the fork stops panicking and
-    /// `from_bytes` drops its `catch_unwind`, this test should keep passing
-    /// unchanged. A test asserting a panic would have to be rewritten by
-    /// whoever fixes it, which is how a regression seed gets quietly deleted.
+    /// error" — and not against the panic. When `rustreexo` 0.7.0 stopped
+    /// panicking this test kept passing unchanged, and it will again if
+    /// `from_bytes` ever drops its `catch_unwind`. A test asserting a panic
+    /// would have had to be rewritten by whoever fixed it, which is how a
+    /// regression seed gets quietly deleted.
     #[test]
     fn a_bad_node_type_is_an_error_not_a_panic() {
         let seed = hex_bytes("0a00007e7e000000000a000000000000000a00000000000000");

@@ -102,10 +102,12 @@ impl CompactState {
     /// disagrees with an honest bridge.
     ///
     /// **Not "immediately", though.** That word was in this comment and it was
-    /// wrong: `a_wrong_leaf_counter_is_silent_and_sometimes_delayed` in
+    /// wrong: `a_wrong_leaf_counter_is_caught_only_by_its_root_count` in
     /// `zutreexo-accumulator` measures a seed with the wrong transparent leaf
-    /// counter producing *identical* roots for a block before diverging. Nor is
-    /// a bad seed ever rejected — Utreexo cannot tell.
+    /// counter producing *identical* roots for seven blocks before diverging.
+    /// Since `rustreexo` 0.7.0 most bad counters are rejected on the first
+    /// insert — those whose popcount disagrees with the root count — but one
+    /// with the right popcount is not, and a wrong root is never detectable.
     ///
     /// The mitigation is therefore comparison across independent bridges — the
     /// bridge's `wire::Roots` response is a few hundred bytes for that reason —
