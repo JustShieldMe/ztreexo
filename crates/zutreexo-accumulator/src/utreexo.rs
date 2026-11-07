@@ -754,7 +754,18 @@ mod tests {
                 "is_empty() changed across the round trip, which is what breaks \
                  MemForest deserialization"
             );
+            assert_eq!(back.is_placeholder(), original.is_placeholder());
         }
+
+        // The trait's constructors and predicates must agree with each other.
+        // Through 0.6.0 the proof path called `placeholder()` and exercised
+        // this incidentally; 0.7.0's does not (D47), so this is now the only
+        // thing that does.
+        assert!(ZcashNodeHash::empty().is_empty());
+        assert!(!ZcashNodeHash::empty().is_placeholder());
+        assert!(ZcashNodeHash::placeholder().is_placeholder());
+        assert!(!ZcashNodeHash::placeholder().is_empty());
+        assert!(!ZcashNodeHash::Some([0u8; 32]).is_placeholder());
 
         // `Some([0; 32])` must stay distinct from `Empty`. Without the tag the
         // two are indistinguishable on the wire, which is the heart of the bug.
