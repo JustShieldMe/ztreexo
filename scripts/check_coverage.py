@@ -329,6 +329,35 @@ FILE_FLOORS: dict[str, dict[str, float]] = {
             "relies on is covered by zutreexo-csn/tests/reorg.rs."
         ),
     },
+    # Phase 6f's three measurement binaries (D46). Same category as
+    # genesis_replay: each replays mainnet from genesis through a live zebrad
+    # for hours to produce one table, and none computes state the workspace
+    # depends on. They landed without entries here, so CI measured them at
+    # ~0% and the workspace total fell below every floor — the gate working
+    # as intended, on a file it should have been told about.
+    "crates/zutreexo-testkit/src/bin/proof_encoding.rs": {
+        "never_measured": (
+            "operational entry point — replays mainnet from a live zebrad to "
+            "split transparent proof bytes into digests and framing, and price "
+            "candidate encodings (D46). Reporting only; the proofs it encodes "
+            "are generated and verified by zutreexo-accumulator, covered there."
+        ),
+    },
+    "crates/zutreexo-testkit/src/bin/spend_age.rs": {
+        "never_measured": (
+            "operational entry point — replays mainnet from a live zebrad to "
+            "histogram the age of every transparent spend (D46). Reporting "
+            "only; it computes no state."
+        ),
+    },
+    "crates/zutreexo-testkit/src/bin/cache_cost.rs": {
+        "never_measured": (
+            "operational entry point — replays mainnet from a live zebrad to "
+            "price a compact node's leaf cache in proof bytes, leaves held and "
+            "pollard size (D46). Reporting only; the proofs it builds come "
+            "from zutreexo-accumulator, covered there."
+        ),
+    },
     # Phase 4a. The bundle format is what a bridge serves and a compact node
     # consumes, so its decoder is an untrusted-input surface like store.rs.
     "crates/zutreexo-chain/src/bundle.rs": {

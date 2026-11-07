@@ -77,8 +77,7 @@ help: to change the binary name to `wire-request-decode`, convert `bin.name`
 72 + name = "wire-request-decode"
    |
 warning: `zutreexo-fuzz` (manifest) generated 7 warnings
-   Compiling zutreexo-fuzz v0.0.0 (/home/blocknodes/ztreexo/fuzz)
-    Finished `release` profile [optimized + debuginfo] target(s) in 1.02s
+    Finished `release` profile [optimized + debuginfo] target(s) in 0.43s
 warning: the following packages contain code that will be rejected by a future version of Rust: halo2_gadgets v0.5.0, primitive-types v0.12.2
 note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
 warning: binary `bundle_decode` should have a kebab-case name
@@ -160,8 +159,7 @@ help: to change the binary name to `wire-request-decode`, convert `bin.name`
 72 + name = "wire-request-decode"
    |
 warning: `zutreexo-fuzz` (manifest) generated 7 warnings
-   Compiling zutreexo-fuzz v0.0.0 (/home/blocknodes/ztreexo/fuzz)
-    Finished `release` profile [optimized + debuginfo] target(s) in 0.23s
+    Finished `release` profile [optimized + debuginfo] target(s) in 0.06s
 warning: the following packages contain code that will be rejected by a future version of Rust: halo2_gadgets v0.5.0, primitive-types v0.12.2
 note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
 warning: binary `bundle_decode` should have a kebab-case name
@@ -243,8 +241,7 @@ help: to change the binary name to `wire-request-decode`, convert `bin.name`
 72 + name = "wire-request-decode"
    |
 warning: `zutreexo-fuzz` (manifest) generated 7 warnings
-   Compiling zutreexo-fuzz v0.0.0 (/home/blocknodes/ztreexo/fuzz)
-    Finished `release` profile [optimized + debuginfo] target(s) in 0.32s
+    Finished `release` profile [optimized + debuginfo] target(s) in 0.06s
 warning: the following packages contain code that will be rejected by a future version of Rust: halo2_gadgets v0.5.0, primitive-types v0.12.2
 note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
 warning: binary `bundle_decode` should have a kebab-case name
@@ -326,8 +323,7 @@ help: to change the binary name to `wire-request-decode`, convert `bin.name`
 72 + name = "wire-request-decode"
    |
 warning: `zutreexo-fuzz` (manifest) generated 7 warnings
-   Compiling zutreexo-fuzz v0.0.0 (/home/blocknodes/ztreexo/fuzz)
-    Finished `release` profile [optimized + debuginfo] target(s) in 0.26s
+    Finished `release` profile [optimized + debuginfo] target(s) in 0.06s
 warning: the following packages contain code that will be rejected by a future version of Rust: halo2_gadgets v0.5.0, primitive-types v0.12.2
 note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
 warning: binary `bundle_decode` should have a kebab-case name
@@ -409,8 +405,7 @@ help: to change the binary name to `wire-request-decode`, convert `bin.name`
 72 + name = "wire-request-decode"
    |
 warning: `zutreexo-fuzz` (manifest) generated 7 warnings
-   Compiling zutreexo-fuzz v0.0.0 (/home/blocknodes/ztreexo/fuzz)
-    Finished `release` profile [optimized + debuginfo] target(s) in 0.26s
+    Finished `release` profile [optimized + debuginfo] target(s) in 0.06s
 warning: the following packages contain code that will be rejected by a future version of Rust: halo2_gadgets v0.5.0, primitive-types v0.12.2
 note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
 warning: binary `bundle_decode` should have a kebab-case name
@@ -492,7 +487,7 @@ help: to change the binary name to `wire-request-decode`, convert `bin.name`
 72 + name = "wire-request-decode"
    |
 warning: `zutreexo-fuzz` (manifest) generated 7 warnings
-    Finished `release` profile [optimized + debuginfo] target(s) in 0.07s
+    Finished `release` profile [optimized + debuginfo] target(s) in 0.06s
 warning: the following packages contain code that will be rejected by a future version of Rust: halo2_gadgets v0.5.0, primitive-types v0.12.2
 note: to see what the problems were, use the option `--future-incompat-report`, or run `cargo report future-incompatibilities --id 1`
 warning: binary `bundle_decode` should have a kebab-case name

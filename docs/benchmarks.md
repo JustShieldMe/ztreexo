@@ -600,6 +600,19 @@ worth roughly 11% of the total — useful, not decisive. **The 65.3% sitting in
 Utreexo proofs is where the work belongs**, and that is a question about
 `rustreexo`'s proof encoding rather than ours.
 
+> **Corrected 2026-09-24 — the second sentence does not follow from the first,
+> and [D46](design.md) measured why.** 65.3% of the bundle is where those bytes
+> *are*; it is not what an encoding can remove. Splitting the proof into its
+> components shows **94.1% of it is 32-byte digests**, which do not compress.
+> Everything a re-encoding can touch — the `u64` length prefixes, the target
+> positions, the per-hash tag byte — is 5.9% of the proof, and taking all of it
+> saves **3.2% of proof bytes and 2.3% of a bundle**. The encoding work was
+> scoped on the strength of the sentence above and dropped on the measurement.
+>
+> The lever is a node needing *fewer* digests, which means caching leaves it can
+> prove itself. D46 prices that too, and it is a trade rather than a win: 64.9%
+> of the proof bytes costs holding 65% of the UTXO set.
+
 Both are wire-format changes and belong with the Phase 4b transport, before the
 format has clients. Neither has been implemented or measured at the new size;
 the percentages above are projections from a byte census.

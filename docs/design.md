@@ -1324,6 +1324,177 @@ a proof.
 
 ---
 
+## D46 — 94% of a transparent proof is digests, so the encoding is not the lever; the cache is, and what it costs depends on the era
+
+**Phase 6e, measured 2026-09-24.** `docs/benchmarks.md` puts **65.3% of a
+compact node's proof bandwidth in Utreexo inclusion proofs** and notes that "the
+65.3% sitting in Utreexo proofs is where the work belongs". The next phase was
+scoped as exactly that: a tighter encoding, a `PROOF_FORMAT_VERSION` bump, a new
+fuzz target. Three measurement tools were written to size the work before doing
+it, and they retired it.
+
+### The encoding is worth 2.3% of a bundle
+
+`crates/zutreexo-testkit/src/bin/proof_encoding.rs` splits real proof bytes into
+their components over heights 0–150,000. It reproduces `benchmarks.md`'s
+**4,733,477,880** proof bytes exactly, which is the check that it is measuring
+the same thing:
+
+| component | bytes | share of proof |
+|---|---|---|
+| **digests** | 4,456,473,056 | **94.1%** |
+| target positions | 135,190,024 | 2.9% |
+| hash tags | 139,264,783 | 2.9% |
+| length prefixes | 2,400,016 | 0.1% |
+| version byte | 150,001 | 0.0% |
+
+A digest is a hash. It does not compress, and no framing change recovers a byte
+of it. Everything an encoder can touch is the other 5.9%. Pricing the three
+obvious changes cumulatively:
+
+| encoding | vs current proof bytes | vs bundle |
+|---|---|---|
+| varint length prefixes | −0.0% | −0.0% |
+| + delta-coded varint target positions | −0.6% | −0.5% |
+| + presence bitmap instead of a tag byte per hash | **−3.2%** | **−2.3%** |
+
+**2.3% of a bundle does not buy a wire-format break.** It would cost a version
+bump, a migration path, a new fuzz target and a re-run of the Phase 4b transport
+measurements, against a bandwidth overhead of 152.6% that it would leave at
+149%. Not built, and the reasoning is recorded here so it is not re-proposed.
+
+One incidental finding would have broken the encoder had it been written first:
+**91,191 of the 150,001 proofs carry unsorted target positions.** A delta
+encoding cannot assume sorted input, and the fallback costs most of the 0.6%
+that delta coding was there to buy.
+
+> **The error worth naming is in how the 65.3% was read.** It is a true figure
+> about where bundle bytes go, and it was turned into a plan on the unstated
+> assumption that bytes in a place are bytes that can be removed. They are
+> hashes. The figure that mattered — the split *inside* the proof — had never
+> been measured, and measuring it took one afternoon against a phase of work.
+
+### So the lever is needing fewer digests, which means a cache
+
+A node that still remembers a leaf can prove the spend itself, so the bridge
+omits that target and the digests it would have needed. This is Utreexo's own
+answer and it works in Bitcoin because outputs there are spent young.
+
+`spend_age.rs` measures the distribution that decides it. Over heights
+100,000–150,000, with creates tracked from genesis:
+
+- mean spend age **35,725 blocks**, about 31 days at 75 s;
+- **0.1%** of outputs are spent in the block that created them;
+- only **14.3%** are younger than 1,000 blocks.
+
+`cache_cost.rs` then converts that into bytes, by building — per block, for each
+window — the proof the bridge would actually send once the young targets are
+dropped, and encoding it. This is not the same question as coverage: batched
+proofs share internal nodes, so removing half the targets need not remove half
+the hashes.
+
+| cache window | spends covered | proof bytes saved | leaves held | blocks needing no proof |
+|---|---|---|---|---|
+| 100 blocks | 7.4% | 4.7% | 35,265 | 4,898 |
+| 1,000 blocks | 14.3% | 11.3% | 290,911 | 11,037 |
+| 10,000 blocks | 28.0% | **26.7%** | 2,608,783 | 18,578 |
+| 50,000 blocks | 65.0% | **64.9%** | 9,418,960 | 29,348 |
+
+**Bytes track coverage almost exactly**, which was not the expected result — the
+prediction recorded when the tool was written was that sharing would blunt it
+badly. It does not: the targets a cache removes take their digests with them.
+So the cache works exactly as well as the age distribution allows, and no
+better.
+
+### And that is the problem
+
+The live UTXO set at height 150,000 is **14,388,508 leaves**. Read the table
+against that number:
+
+- saving **26.7%** means holding **2.6 million leaves — 18% of the set**;
+- saving **64.9%** means holding **9.4 million — 65% of the set**.
+
+A compact node exists to hold roots instead of the UTXO set. `benchmarks.md`
+measures it at **693 bytes against Zebra's 31.7 GiB**. A cache that recovers
+two thirds of the proof bandwidth does so by putting two thirds of the UTXO set
+back on disk. **The cache trades away precisely the property the design is
+selling**, and the trade is close to one-for-one: 65% of the set for 65% of the
+proof bytes.
+
+That is not an argument that no cache is worth having. The 10,000-block row is a
+real option — 26.7% of transparent proof bytes, about 19.5% of the bundle, for
+2.6M leaves — and **44% of blocks then need no transparent proof at all**, which
+is a latency and verification saving as well as a bandwidth one. It is an
+argument that the cache is a dial between two named costs, not a free
+optimisation, and that the dial's exchange rate on this chain is roughly linear.
+
+### What this does not yet say
+
+- ~~**The distribution above is from 2017.** Heights 100,000–150,000 are early
+  mainnet, and transparent traffic then was mining payouts. A full-chain run
+  measuring the tip era is in progress; if modern spends are younger, every
+  number in the cache table improves, and if they are older it improves nothing.
+  **No cache should be built before that lands.**~~ **It landed — see below.**
+- **A window near the chain height is an artifact.** The 100,000-block row
+  covers 99.6% of spends because at height 150,000 there is almost nothing
+  older to spend. Rows at or above the measured height carry no information.
+- **"Leaves held" is a floor on the memory, not the memory.** A node that
+  remembers a leaf must keep enough of the forest to prove it, which is a
+  pollard holding those leaves' paths, not 32 bytes each. The pollard's real
+  size is unmeasured, and it is strictly larger than the leaf count suggests.
+  Any decision on the 10,000-block option needs that number first.
+
+### Amended 2026-09-27 — the tip measurement landed, and it argues the other way
+
+`spend_age` over the whole chain, ages counted from height 3,300,000, took 43
+hours of wall clock sharing a box with the fuzz campaign. **Modern transparent
+spends are far younger than 2017's**, and every cache row improves:
+
+| cache window | coverage at 100k–150k (2017) | coverage at 3.3M–3.45M (tip) |
+|---|---|---|
+| 1 block | 0.2% | **5.6%** |
+| 6 blocks | 1.0% | **14.5%** |
+| 100 blocks | 7.5% | **29.7%** |
+| 1,000 blocks | 14.3% | **49.3%** |
+| 10,000 blocks | 28.0% | **73.3%** |
+| 50,000 blocks | 65.1% | 78.3% |
+
+Same-block spends went from 0.1% to **2.4%**. A 10,000-block window now covers
+**nearly three quarters of spends** where it covered barely a quarter in 2017.
+
+**The mean is the wrong statistic here and says so plainly: 329,182 blocks,
+which is larger than 2017's 35,725 even though the distribution is far
+younger.** It is bimodal. Modern transactional traffic is young — 49.3% inside
+1,000 blocks — while a dormant tail wakes occasionally: **7.8% of spends are of
+outputs older than 2,097,152 blocks**, coins moving after four years or more.
+Any single-number summary of this distribution is wrong, and a cache sized off
+the mean would be sized for the tail rather than the traffic.
+
+Since the 2017 measurement showed **bytes tracking coverage almost 1:1**, a
+10,000-block window plausibly saves around 70% of transparent proof bytes at the
+tip, against the 26.7% recorded above. That is a different conclusion from the
+one this entry reached, and it comes from the same tool pointed at the right
+era.
+
+**So the sentence "the cache trades away precisely the property the design is
+selling" stands only for 2017 traffic.** What it costs at the tip is not yet
+known, because the leaf count is the other half of the trade and has not been
+measured there: the live UTXO set has grown from 14.4M to **27,538,297**, so a
+window covering 73.3% of spends might hold a small fraction of that set or most
+of it, and the two answers point opposite ways. `cache_cost` over the tip era
+answers it, and needs the box the fuzz campaign is using until 2026-09-29.
+
+### Consequence for the phase
+
+The next phase is not the encoder — that is settled at 2.3% of a bundle and
+should not be re-proposed. Whether it is a cache depends on two numbers that are
+now one: `cache_cost` at the tip, giving bytes saved *and* leaves held, plus the
+pollard size behind "leaves held", which remains a floor rather than the memory.
+Both tools are committed so the question can be re-asked cheaply against any
+height range, which is the reason the 2017 answer could be corrected at all.
+
+---
+
 ## D45 — The seven-target campaign: 103 billion executions, no crashes, and three "saturated" targets that were simply finished
 
 **Phase 6.** This was the first run with all seven targets. It became possible

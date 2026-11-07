@@ -1,0 +1,11 @@
+nohup: ignoring input
+[2026-09-19T22:08:14+00:00] building 7 targets
+[2026-09-19T22:08:15+00:00] built
+[2026-09-19T22:08:15+00:00] launching snapshot_decode for 604800s with 8 worker(s)
+[2026-09-19T22:08:15+00:00] launching bundle_decode for 259200s with 1 worker(s)
+[2026-09-19T22:08:15+00:00] launching forest_decode for 259200s with 1 worker(s)
+[2026-09-19T22:08:15+00:00] launching wire_request_decode for 259200s with 1 worker(s)
+[2026-09-19T22:08:15+00:00] launching utxo_proof_decode for 259200s with 1 worker(s)
+[2026-09-19T22:08:15+00:00] launching compact_state_decode for 259200s with 1 worker(s)
+[2026-09-19T22:08:15+00:00] launching nonmembership_decode for 259200s with 1 worker(s)
+[2026-09-19T22:08:15+00:00] all launched; waiting

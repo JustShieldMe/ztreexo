@@ -54,7 +54,31 @@
 # The fork fix is now pushed and pinned in **both** manifests, and all five
 # committed crash artifacts replay clean.
 #
-# Usage: nohup scripts/fuzz_72h.sh > fuzz-runs/driver.log 2>&1 &
+# # Resuming after an interruption
+#
+# A seven-day budget on a box that reboots is a budget that never completes.
+# The 2026-09-19 campaign died at 47 h of 72 and lost its whole clock, because
+# `-max_total_time` is per process and the driver re-launched from scratch.
+#
+# So each target gets an absolute *deadline* on first launch, written to
+# `$OUT/<target>.deadline`. Re-running this script resumes: a target whose
+# deadline is still in the future is relaunched with only the time that
+# remains, and one whose deadline has passed is skipped. Its corpus is on disk
+# either way, so the work is not lost, only the clock. Logs are appended to on
+# resume rather than truncated.
+#
+# Deadlines are wall-clock, so the hours a box spends powered off are hours the
+# budget loses. That is the intended reading: "72 hours of fuzzing" is a claim
+# about the fuzzer, and a resumed run should not be able to claim more of it
+# than it actually got. `scripts/fuzz_saturation.py` reads the logs, which
+# carry each segment's own `time:` counter, so a resumed run is legible there.
+#
+# Start fresh instead by removing the deadlines:
+#
+#   rm -f fuzz-runs/*.deadline
+#
+# Usage: nohup setsid scripts/fuzz_72h.sh > fuzz-runs/driver.log 2>&1 &
+#        (`setsid` so the run survives the terminal that started it)
 
 set -uo pipefail
 
@@ -106,7 +130,20 @@ say() { echo "[$(date -Is)] $*"; }
 # five D33 files from August, which read as new crashes until checked (D45).
 # Everything newer than this stamp is from this run.
 STAMP="$OUT/.run-start"
-touch "$STAMP"
+[ -f "$STAMP" ] || touch "$STAMP"
+
+# Seconds left on this target's budget, and the deadline bookkeeping behind it.
+# Echoes the remaining seconds, or 0 when the budget is already spent.
+remaining_for() {
+  local t="$1" budget="$2" file="$OUT/$1.deadline" now deadline
+  now=$(date +%s)
+  if [ -f "$file" ] && deadline=$(cat "$file" 2>/dev/null) && [ -n "$deadline" ]; then
+    echo $(( deadline > now ? deadline - now : 0 ))
+  else
+    echo $(( now + budget )) > "$file"
+    echo "$budget"
+  fi
+}
 
 say "building ${#TARGETS[@]} targets"
 for spec in "${TARGETS[@]}"; do
@@ -116,9 +153,19 @@ for spec in "${TARGETS[@]}"; do
 done
 say "built"
 
+launched=0
 for spec in "${TARGETS[@]}"; do
-  IFS=: read -r t secs workers <<< "$spec"
-  say "launching $t for ${secs}s with ${workers} worker(s)"
+  IFS=: read -r t budget workers <<< "$spec"
+  secs=$(remaining_for "$t" "$budget")
+  if [ "$secs" -le 0 ]; then
+    say "skipping $t — its ${budget}s budget is already spent"
+    continue
+  fi
+  if [ "$secs" -lt "$budget" ]; then
+    say "resuming $t for ${secs}s of ${budget}s with ${workers} worker(s)"
+  else
+    say "launching $t for ${secs}s with ${workers} worker(s)"
+  fi
   parallel=()
   if [ "$workers" -gt 1 ]; then
     parallel=(-fork="$workers")
@@ -128,11 +175,18 @@ for spec in "${TARGETS[@]}"; do
       -rss_limit_mb="$RSS_MB" \
       -print_final_stats=1 \
       "${parallel[@]}" \
-    > "$OUT/$t.log" 2>&1 &
+    >> "$OUT/$t.log" 2>&1 &
   echo "$!" > "$OUT/$t.pid"
+  launched=$((launched + 1))
 done
 
-say "all launched; waiting"
+if [ "$launched" -eq 0 ]; then
+  say "every target's budget is spent; nothing to run"
+  say "remove $OUT/*.deadline to start a fresh campaign"
+  exit 0
+fi
+
+say "$launched of ${#TARGETS[@]} targets running; waiting"
 wait
 say "all targets finished"
 

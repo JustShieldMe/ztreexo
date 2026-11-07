@@ -1,0 +1,29 @@
+target                           edges    last new edge   after it
+------------------------------------------------------------------
+snapshot_decode          1060->1304 (+244)            3.5 d     42.0%
+forest_decode            308->313 (+5)           11 min     99.8%
+bundle_decode            815->815 (+0)            never    100.0%
+compact_state_decode     301->301 (+0)            never    100.0%
+nonmembership_decode     323->323 (+0)            never    100.0%
+utxo_proof_decode        184->184 (+0)            never    100.0%
+wire_request_decode      187->187 (+0)            never    100.0%
+------------------------------------------------------------------
+7 targets, 87,326,030,081 executions, 249 new edges
+
+Saturated -- gained no edges. More hours will not help. Either the
+seeds cannot reach further or there is nothing left to reach; check
+with `cargo fuzz coverage <target>` before re-seeding (D45):
+  bundle_decode: 2,150,846,853 executions, still at 815 edges
+  compact_state_decode: 16,744,745,891 executions, still at 301 edges
+  nonmembership_decode: 2,022,994,324 executions, still at 323 edges
+  utxo_proof_decode: 17,923,394,460 executions, still at 184 edges
+  wire_request_decode: 42,764,231,118 executions, still at 187 edges
+
+Suggested budget for the next run (10x time-to-last-discovery):
+  snapshot_decode          34.9 d
+  forest_decode            1.8 h
+  bundle_decode            minutes -- re-seed instead
+  compact_state_decode     minutes -- re-seed instead
+  nonmembership_decode     minutes -- re-seed instead
+  utxo_proof_decode        minutes -- re-seed instead
+  wire_request_decode      minutes -- re-seed instead
