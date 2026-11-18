@@ -14,6 +14,17 @@ all-features = true
 [advisories]
 version = 2
 yanked = "deny"
+# Unmaintained advisories stay fatal: each exception below is named by ID, so
+# the next unmaintained crate still fails CI and gets its own decision.
+ignore = [
+    # chrono is soft-deprecated upstream (chronotope/chrono#1768). It reaches us
+    # only through zebra-chain, which still requires it as of 16.0.0. This is an
+    # unmaintained notice, not a vulnerability, and there is no safe upgrade.
+    # Drop it when zebra-chain moves to jiff or time.
+    { id = "RUSTSEC-2026-0543", reason = "chrono unmaintained; transitive via zebra-chain (still required in 16.0.0), no safe upgrade" },
+    # humantime wraps chrono and inherits the same notice, by the same path.
+    { id = "RUSTSEC-2026-0542", reason = "humantime unmaintained; transitive via zebra-chain (still required in 16.0.0), no safe upgrade" },
+]
 
 [licenses]
 version = 2
